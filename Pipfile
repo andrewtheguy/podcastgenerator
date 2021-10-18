@@ -5,9 +5,12 @@ name = "pypi"
 
 [packages]
 filetype = "*"
-jsonlines = "*"
+pyyaml = "*"
 tinytag = "*"
 natsort = "*"
+keyring = "*"
+jinja2 = "*"
+webdavclient3 = "*"
 
 [dev-packages]
 
