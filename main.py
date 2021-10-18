@@ -162,13 +162,13 @@ def uploadpodcast(args):
     now = datetime.now(timezone.utc)
 
     for obj in data["items"]:
-        local_path = os.path.join(dir,obj['file'])
-        if not os.path.isfile(local_path):
-            raise RuntimeError(f'{local_path} is not an existing file')
-        filename, file_extension = os.path.splitext(local_path)
+        filename, file_extension = os.path.splitext(obj['file'])
         ext = file_extension.lower()
         remote_path = remote_dir + '/audio/' + obj['hash_md5']+ext
         if(not client.check(remote_path)):
+            local_path = os.path.join(dir, obj['file'])
+            if not os.path.isfile(local_path):
+                raise RuntimeError(f'{local_path} is not an existing file')
             logging.info(f"uploading new file {obj['file']} to {remote_path}")
             client.upload_sync(remote_path=remote_path, local_path=local_path)
 
