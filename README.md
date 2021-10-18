@@ -19,7 +19,8 @@ Create a yaml file `podcastconfig.yaml` in the directory with the following info
 ```
 config:
   timestamp:
-    # for seed_ts, it'll sort the file and increment the file by a day from top to bottom starting from 0
+    # for generate_method, it will sort the new files added and increment the file from seed_ts by a day from top to bottom based on list size starting from 0
+    # for modified, it will use the file's modified timestamp
     generate_method: 'seed_ts'
     seed_ts: '2019-02-01T08:00:00+00:00'
   channel: 
