@@ -87,7 +87,13 @@ def process_directory(args):
     #count = 0
 
     for file in files_sorted:
-        hash_md5 = hashlib.md5(open(file,'rb').read()).hexdigest()
+
+        with open(file,'rb') as f:
+            file_hash = hashlib.md5()
+            while chunk := f.read(8192):
+                file_hash.update(chunk)
+        hash_md5 = file_hash.hexdigest()
+        #hash_md5 = hashlib.md5(open(file,'rb').read()).hexdigest()
         if(hash_md5 in hash_md5s):
             logging.info(f'hash_md5 {hash_md5} for {file} already exists, skipping')
             continue
