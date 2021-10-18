@@ -26,6 +26,7 @@ import requests
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
+
 mime_extension_mapping = {
     'audio/mp4a-latm':'.m4a'
 }
@@ -129,7 +130,8 @@ def process_directory(args):
                       })
         #count = count + 1
     with open(info_file, 'w') as outfile:
-        yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4)
+        #yaml.dump(data, outfile, Dumper=MyDumper, encoding='utf-8', allow_unicode=True, default_flow_style=False, sort_keys=False)
+        yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
 
 cmd_new.set_defaults(command=process_directory)
 
