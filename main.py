@@ -84,7 +84,7 @@ def process_directory(args):
 
     files_sorted = natsorted(glob.glob(f"{dir}/*.m4a"))
 
-    count = 0
+    #count = 0
 
     for file in files_sorted:
         hash_md5 = hashlib.md5(open(file,'rb').read()).hexdigest()
@@ -99,11 +99,11 @@ def process_directory(args):
         filename = os.path.basename(file)
         data["items"].append({'file': filename,
                       'hash_md5': hash_md5,
-                      'timestamp': (base_date + timedelta(days=count)).isoformat(),
+                      'timestamp': (base_date + timedelta(days=len(data["items"]))).isoformat(),
                       'file_type': file_type,
                       'tag': tag.as_dict(),
                       })
-        count = count + 1
+        #count = count + 1
     with open(info_file, 'w') as outfile:
         yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4)
 
@@ -169,7 +169,7 @@ def uploadpodcast(args):
         ext = file_extension.lower()
         remote_path = remote_dir + '/audio/' + obj['hash_md5']+ext
         if(not client.check(remote_path)):
-            logging.info(f"uploading new file to {remote_path}")
+            logging.info(f"uploading new file {obj['file']} to {remote_path}")
             client.upload_sync(remote_path=remote_path, local_path=local_path)
 
     env = Environment(
