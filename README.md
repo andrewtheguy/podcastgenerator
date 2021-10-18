@@ -78,3 +78,6 @@ it will generate a `podcastinfo.yaml` with the following data for each audio fil
 ./main.py generate --directory=/directory_with_audio
 ```
 after that, the podcast feed will be available under `https://basehost.com/webdav/folder1/feed.xml`
+
+## Note
+Regenerating `podcastconfig.yaml` won't remove deleted source file entries from the file; however, if the source file is deleted before it gets uploaded, it will cause upload to fail for that file.
