@@ -38,6 +38,10 @@ config:
 
 will result in podcast url with this setup: `https://basehost.com/webdav/folder1/audio/md5sum_of_file.extension` # base_host is public facing host which might not be the same as webdav host
 
+timestamp `generate_method` supports `seed_ts` and `modified`
+
+it will sort the new files before adding to list, but not existing ones yet
+
 ## set password for webdav
 
 `keyring.set_password("podcastgenerator", "andrew_for_webdav", "password")`
