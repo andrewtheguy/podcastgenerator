@@ -33,7 +33,7 @@ parser.set_defaults(command=lambda _: parser.print_help())
 
 cmd_new = subparsers.add_parser(
     "generate",
-    description="generate podcast, in a folder",
+    description="generate podcast info in a folder from new files, it will not update podcast feed",
     epilog="These fields all fill out a template and are easily changed later,"
            " in particular description should probably be longer than is"
            " conveniently given as an option.")
@@ -111,7 +111,7 @@ cmd_new.set_defaults(command=process_directory)
 
 cmd_upload = subparsers.add_parser(
     "upload",
-    description="upload podcast, in a folder",
+    description="upload podcast to webdav and then generate feed",
     epilog="These fields all fill out a template and are easily changed later,"
            " in particular description should probably be longer than is"
            " conveniently given as an option.")
