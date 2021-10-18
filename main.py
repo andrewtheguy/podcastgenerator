@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 
 import argparse
 import os
+import sys
 import glob
 import hashlib
 import mimetypes
@@ -19,6 +20,8 @@ import yaml
 from datetime import datetime, timezone
 from datetime import timedelta
 from urllib.parse import urlparse, urlunparse, quote
+from requests.auth import HTTPBasicAuth
+import requests
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -138,10 +141,12 @@ cmd_upload = subparsers.add_parser(
            " conveniently given as an option.")
 
 cmd_upload.add_argument('-d','--directory', help='directory', required=True)
+cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
 
 
 def uploadpodcast(args):
     argdir = args.directory
+    delete_extra = args.delete_extra
     dir = os.path.abspath(argdir)
     if not os.path.isdir(dir):
         raise RuntimeError(f'{dir} is not a directory')
@@ -164,8 +169,6 @@ def uploadpodcast(args):
 
     remote_dir = config['remote']['base_folder']
 
-
-
     password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
     options = {
         'webdav_hostname': config['webdav']['hostname'],
@@ -173,24 +176,50 @@ def uploadpodcast(args):
         'webdav_root': config['webdav']['root'],
         'webdav_password': password
     }
+
+    audio_dir = remote_dir + '/audio'
+
     client = Client(options)
     client.verify = True  # To not check SSL certificates (Default = True)
     #client.session.proxies(...)  # To set proxy directly into the session (Optional)
     #client.session.auth(...)  # To set proxy auth directly into the session (Optional)
     client.mkdir(remote_dir)
-    client.mkdir(remote_dir + '/audio')
+    client.mkdir(audio_dir)
+
+    alllist = client.list(audio_dir,get_info=True)
+    filelist = list(filter(lambda item: not item['isdir'], alllist))
+    filenames = list(map(lambda item: item['name'], filelist))
+    #print(alllist)
+    #print(filelist)
+    #print(filenames)
+    files_set = set(filenames)
 
     now = datetime.now(timezone.utc)
 
     for obj in data["items"]:
         ext = mime_extension_mapping[obj['file_type']]
-        remote_path = remote_dir + '/audio/' + obj['hash_md5']+ext
-        if(not client.check(remote_path)):
+        filename = obj['hash_md5'] + ext
+        remote_path = audio_dir + '/' + filename
+        if(filename not in files_set):
             local_path = os.path.join(dir, obj['file'])
             if not os.path.isfile(local_path):
                 raise RuntimeError(f'{local_path} is not an existing file')
             logging.info(f"uploading new file {obj['file']} to {remote_path}")
             client.upload_sync(remote_path=remote_path, local_path=local_path)
+        else:
+            files_set.remove(filename)
+
+    # delete only extra ones remaining
+    if delete_extra and len(files_set) > 0:
+        print('delete these files:')
+        for file in sorted(files_set):
+            print(file)
+        should_continue = query_yes_no(f"type yes to confirm")
+        if should_continue:
+            for file in files_set:
+                path = audio_dir+'/'+file
+                logging.info(f'deleting extra file {path}')
+                client.clean(path)
 
     env = Environment(
         loader=FileSystemLoader(os.path.dirname(os.path.realpath(__file__))),
@@ -244,6 +273,41 @@ def uploadpodcast(args):
     client.upload_sync(remote_path=remote_dir+f'/{config_filename}', local_path=config_file)
     client.upload_sync(remote_path=remote_dir+f'/{info_filename}', local_path=info_file)
     client.upload_sync(remote_path=remote_dir+f'/feed.xml', local_path=feed_file)
+
+
+
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
+
 
 cmd_upload.set_defaults(command=uploadpodcast)
 

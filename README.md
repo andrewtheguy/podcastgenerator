@@ -75,8 +75,13 @@ it will generate a `podcastinfo.yaml` with the following data for each audio fil
 
 ## upload
 ```
-./main.py generate --directory=/directory_with_audio
+./main.py upload --directory=/directory_with_audio
 ```
+upload and delete extra
+```
+./main.py upload --directory=/directory_with_audio --delete-extra
+```
+
 after that, the podcast feed will be available under `https://basehost.com/webdav/folder1/feed.xml`
 
 ## Note
