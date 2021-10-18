@@ -1,6 +1,6 @@
 # About
 
-generate a podcast feed from a directory with audio files and upload it to a webdav server
+generate a podcast feed from a directory with audio files and upload it to a webdav server (currently only works with m4a)
 
 # Instructions
 
