@@ -7,7 +7,7 @@ import argparse
 import os
 import glob
 import hashlib
-import filetype
+import mimetypes
 from pathlib import Path
 from tinytag import TinyTag
 from natsort import natsorted
@@ -23,6 +23,9 @@ from urllib.parse import urlparse, urlunparse, quote
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
+mime_extension_mapping = {
+    'audio/mp4a-latm':'.m4a'
+}
 
 parser = ArgumentParser(
     description=f"Publish podcasts on IPFS"
@@ -98,7 +101,7 @@ def process_directory(args):
             logging.info(f'hash_md5 {hash_md5} for {file} already exists, skipping')
             continue
         #file_len = Path(file).stat().st_size
-        file_type = filetype.guess_mime(file)
+        file_type = mimetypes.guess_type(file)[0]
 
         tag = TinyTag.get(file)
 
@@ -168,8 +171,7 @@ def uploadpodcast(args):
     now = datetime.now(timezone.utc)
 
     for obj in data["items"]:
-        filename, file_extension = os.path.splitext(obj['file'])
-        ext = file_extension.lower()
+        ext = mime_extension_mapping[obj['file_type']]
         remote_path = remote_dir + '/audio/' + obj['hash_md5']+ext
         if(not client.check(remote_path)):
             local_path = os.path.join(dir, obj['file'])
@@ -192,10 +194,7 @@ def uploadpodcast(args):
     episodes = []
 
     for obj in data["items"]:
-        filename, file_extension = os.path.splitext(obj['file'])
-        ext = file_extension.lower()
-        #logging.debug(ext)
-        remote_path = remote_dir + '/audio/' + obj['hash_md5'] + ext
+        ext = mime_extension_mapping[obj['file_type']]
         link = urlunparse(urlparse(config['remote']['base_host']+'/'+config['webdav']['root']+'/'+config['remote']['base_folder']+'/audio/'+obj['hash_md5'] + ext))
         enclosure = {'file_len': obj['tag']['filesize'], "file_type": obj['file_type']}
 
