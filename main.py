@@ -62,8 +62,12 @@ def process_directory(args):
         dataconf = yaml.safe_load(stream)
     config = dataconf['config']
 
-    if config['timestamp']['generate_method'] == 'seed_ts':
+    timestamp_strategy = config['timestamp']['generate_method']
+
+    if timestamp_strategy == 'seed_ts':
         base_date = datetime.fromisoformat(config['timestamp']['seed_ts'])
+    elif timestamp_strategy == 'modified':
+        pass
     else:
         raise ValueError("only generate_method: 'seed_ts' is supported for now")
 
@@ -84,9 +88,12 @@ def process_directory(args):
         hash_md5s.add(obj['hash_md5'])
 
     #logging.info(hash_md5s)
+    files = glob.glob(f"{dir}/*.m4a")
 
-    files_sorted = natsorted(glob.glob(f"{dir}/*.m4a"))
-
+    if timestamp_strategy == 'seed_ts':
+        files_sorted = natsorted(files)
+    elif timestamp_strategy == 'modified':
+        files_sorted = sorted(files, key=lambda file: os.path.getmtime(file))
     #count = 0
 
     for file in files_sorted:
@@ -106,9 +113,14 @@ def process_directory(args):
         tag = TinyTag.get(file)
 
         filename = os.path.basename(file)
+        if timestamp_strategy == 'seed_ts':
+            ts = (base_date + timedelta(days=len(data["items"])))
+        elif timestamp_strategy == 'modified':
+            ts = datetime.fromtimestamp(os.path.getmtime(file))
+
         data["items"].append({'file': filename,
                       'hash_md5': hash_md5,
-                      'timestamp': (base_date + timedelta(days=len(data["items"]))).isoformat(),
+                      'timestamp': ts.isoformat(),
                       'file_type': file_type,
                       'tag': tag.as_dict(),
                       })
