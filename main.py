@@ -220,8 +220,10 @@ def uploadpodcast(args):
 
         datestr = date.strftime("%a, %d %b %Y %H:%M:%S %z")
 
+        filename, file_extension = os.path.splitext(obj['file'])
+
         episodes.append({
-            'title': obj['tag']['title'],
+            'title': obj['tag']['title'] or filename,
             'link': link,
             'hash_md5': obj['hash_md5'],
             'author': obj['tag']['artist'],
