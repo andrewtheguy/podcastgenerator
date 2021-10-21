@@ -15,7 +15,6 @@ from natsort import natsorted
 import logging
 import keyring
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from webdav3.client import Client
 import yaml
 from datetime import datetime, timezone
 from datetime import timedelta
@@ -24,7 +23,7 @@ from requests.auth import HTTPBasicAuth
 import requests
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 mime_extension_mapping = {
@@ -180,6 +179,17 @@ def uploadpodcast(args):
     }
 
     audio_dir = remote_dir + '/audio'
+
+    session = requests.Session()
+    session.auth = (config['webdav']['login'], password)
+
+    #session.get('https://httpbin.org/headers', headers={'x-test2': 'true'})
+
+    base_url = config['webdav']['hostname'] + config['webdav']['root']
+    print(base_url)
+    response = session.request(f'MKCOL',f'{base_url}/{remote_dir}2/')
+    print(response)
+    return
 
     client = Client(options)
     client.verify = True  # To not check SSL certificates (Default = True)
