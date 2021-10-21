@@ -24,6 +24,7 @@ from requests.auth import HTTPBasicAuth
 import requests
 from io import StringIO, BytesIO
 import secrets
+from datetime import datetime, timezone
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -139,7 +140,7 @@ def process_directory(args):
         if timestamp_strategy == 'seed_ts':
             ts = (base_date + timedelta(days=len(data["items"])))
         elif timestamp_strategy == 'modified':
-            ts = datetime.fromtimestamp(os.path.getmtime(file))
+            ts = datetime.fromtimestamp(os.path.getmtime(file),timezone.utc)
 
         data["items"].append({'file': filename,
                       'hash_md5': hash_md5,
