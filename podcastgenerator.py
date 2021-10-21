@@ -145,6 +145,47 @@ cmd_upload = subparsers.add_parser(
 cmd_upload.add_argument('-d','--directory', help='directory', required=True)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
 
+class PodcastGenerator:
+    def __init__(self, directory):
+
+        config_filename = 'podcastconfig.yaml'
+        config_file = f'{directory}/{config_filename}'
+        if not os.path.isfile(config_file):
+            raise RuntimeError(f'{config_file} is not a file')
+
+        with open(config_file, "r") as stream:
+            dataconf = yaml.safe_load(stream)
+        config = dataconf['config']
+
+        remote_dir = config['remote']['base_folder']
+
+        password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
+        options = {
+            'webdav_hostname': config['webdav']['hostname'],
+            'webdav_login': config['webdav']['login'],
+            'webdav_root': config['webdav']['root'],
+            'webdav_password': password
+        }
+
+        audio_dir = remote_dir + '/audio'
+
+
+        client = Client(options)
+        client.verify = True  # To not check SSL certificates (Default = True)
+        # client.session.proxies(...)  # To set proxy directly into the session (Optional)
+        # client.session.auth(...)  # To set proxy auth directly into the session (Optional)
+        client.mkdir(remote_dir)
+        client.mkdir(audio_dir)
+
+        self.config_filename = config_filename
+        self.config_file = config_file
+        self.client = client
+        self.remote_dir = remote_dir
+        self.audio_dir = audio_dir
+        self.channel = config['channel']
+        self.audio_base_path = urlunparse(urlparse(
+            config['remote']['base_host'] + '/' + config['webdav']['root'] + '/' + config['remote'][
+                'base_folder'] + '/audio'))
 
 def uploadpodcast(args):
     argdir = args.directory
@@ -157,36 +198,14 @@ def uploadpodcast(args):
     if not os.path.isfile(info_file):
         raise RuntimeError(f'{info_file} is not a file')
 
-    config_filename = 'podcastconfig.yaml'
-    config_file = f'{dir}/{config_filename}'
-    if not os.path.isfile(config_file):
-        raise RuntimeError(f'{config_file} is not a file')
-
     with open(info_file, "r") as stream:
         data = yaml.safe_load(stream)
 
-    with open(config_file, "r") as stream:
-        dataconf = yaml.safe_load(stream)
-    config = dataconf['config']
+    podcast_generator = PodcastGenerator(directory=dir)
 
-    remote_dir = config['remote']['base_folder']
-
-    password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
-    options = {
-        'webdav_hostname': config['webdav']['hostname'],
-        'webdav_login': config['webdav']['login'],
-        'webdav_root': config['webdav']['root'],
-        'webdav_password': password
-    }
-
-    audio_dir = remote_dir + '/audio'
-
-    client = Client(options)
-    client.verify = True  # To not check SSL certificates (Default = True)
-    #client.session.proxies(...)  # To set proxy directly into the session (Optional)
-    #client.session.auth(...)  # To set proxy auth directly into the session (Optional)
-    client.mkdir(remote_dir)
-    client.mkdir(audio_dir)
+    remote_dir = podcast_generator.remote_dir
+    audio_dir = podcast_generator.audio_dir
+    client = podcast_generator.client
 
     alllist = client.list(audio_dir,get_info=True)
     filelist = list(filter(lambda item: not item['isdir'], alllist))
@@ -231,14 +250,14 @@ def uploadpodcast(args):
 
     last_build_date = None
 
-    channel = config['channel']
+    channel = podcast_generator.channel
 
 
     episodes = []
 
     for obj in data["items"]:
         ext = mime_extension_mapping[obj['file_type']]
-        link = urlunparse(urlparse(config['remote']['base_host']+'/'+config['webdav']['root']+'/'+config['remote']['base_folder']+'/audio/'+obj['hash_md5'] + ext))
+        link = podcast_generator.audio_base_path + '/'+obj['hash_md5'] + ext
         enclosure = {'file_len': obj['tag']['filesize'], "file_type": obj['file_type']}
 
         date = datetime.fromisoformat(obj['timestamp'])
@@ -272,7 +291,7 @@ def uploadpodcast(args):
     with open(feed_file, 'w') as f:
         f.write(feed)
 
-    client.upload_sync(remote_path=remote_dir+f'/{config_filename}', local_path=config_file)
+    client.upload_sync(remote_path=remote_dir+f'/{podcast_generator.config_filename}', local_path=podcast_generator.config_file)
     client.upload_sync(remote_path=remote_dir+f'/{info_filename}', local_path=info_file)
     client.upload_sync(remote_path=remote_dir+f'/feed.xml', local_path=feed_file)
 
