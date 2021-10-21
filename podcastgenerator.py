@@ -22,6 +22,8 @@ from datetime import timedelta
 from urllib.parse import urlparse, urlunparse, quote
 from requests.auth import HTTPBasicAuth
 import requests
+from io import StringIO, BytesIO
+import secrets
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -55,16 +57,11 @@ def process_directory(args):
     if not os.path.isdir(dir):
         raise RuntimeError(f'{dir} is not a folder')
 
+    podcast_generator = PodcastGenerator(directory=dir)
 
-    config_filename = 'podcastconfig.yaml'
-    config_file = f'{dir}/{config_filename}'
-    if not os.path.isfile(config_file):
-        raise RuntimeError(f'{config_file} is not a file')
+    client = podcast_generator.client
 
-
-    with open(config_file, "r") as stream:
-        dataconf = yaml.safe_load(stream)
-    config = dataconf['config']
+    config = podcast_generator.config
 
     timestamp_strategy = config['timestamp']['generate_method']
 
@@ -147,6 +144,7 @@ cmd_upload.add_argument('--delete-extra', help='delete extra files not found', d
 
 class PodcastGenerator:
     def __init__(self, directory):
+        keylocalfilepath = directory+ '/' + 'channelkey.txt'
 
         config_filename = 'podcastconfig.yaml'
         config_file = f'{directory}/{config_filename}'
@@ -175,6 +173,35 @@ class PodcastGenerator:
         # client.session.proxies(...)  # To set proxy directly into the session (Optional)
         # client.session.auth(...)  # To set proxy auth directly into the session (Optional)
         client.mkdir(remote_dir)
+
+        remote_key_path = remote_dir + '/' + 'channelkey.txt'
+        remote_key_exists = client.check(remote_key_path)
+
+        if not os.path.isfile(keylocalfilepath):
+            if remote_key_exists:
+                raise ValueError('remote key exists while not local, copy the key to local if the local directory is correct')
+            with open(keylocalfilepath, "w") as stream:
+                key_from_dir = secrets.token_urlsafe(32)
+                stream.write(key_from_dir)
+        else:
+            with open(keylocalfilepath, "r") as stream:
+                key_from_dir = stream.read()
+
+        if (len(key_from_dir) < 5):
+            raise ValueError('invalid local key length')
+
+
+        if not remote_key_exists:
+            client.upload_sync(remote_path=remote_key_path, local_path=keylocalfilepath)
+            key = key_from_dir
+        else: #remote exists
+            str = BytesIO()
+            client.download_from(str,remote_path = remote_key_path)
+            key = str.getvalue().decode('UTF-8')
+        #print(key)
+        if(key_from_dir != key):
+            raise ValueError('channelkey.txt need to match server')
+
         client.mkdir(audio_dir)
 
         self.config_filename = config_filename
@@ -183,9 +210,11 @@ class PodcastGenerator:
         self.remote_dir = remote_dir
         self.audio_dir = audio_dir
         self.channel = config['channel']
+        self.config = config
         self.audio_base_path = urlunparse(urlparse(
             config['remote']['base_host'] + '/' + config['webdav']['root'] + '/' + config['remote'][
                 'base_folder'] + '/audio'))
+        self.key = key
 
 def uploadpodcast(args):
     argdir = args.directory
