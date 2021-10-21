@@ -185,8 +185,8 @@ def uploadpodcast(args):
     webdav = easywebdav.connect(protocol = o.scheme, host=o.netloc, username=config['webdav']['login'], password=password)
 
 
-    webdav.mkdir(remote_dir)
-    webdav.mkdir(audio_dir)
+    webdav.mkdir(remote_dir+'/',safe=True)
+    webdav.mkdir(audio_dir+'/',safe=True)
 
     alllist = webdav.ls(audio_dir)
     print(alllist)
