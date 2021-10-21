@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from datetime import timedelta
 from urllib.parse import urlparse, urlunparse, quote
 from requests.auth import HTTPBasicAuth
+from webdav3.client import WebDavXmlUtils
 import requests
 
 logging.basicConfig()
@@ -187,8 +188,8 @@ def uploadpodcast(args):
 
     base_url = config['webdav']['hostname'] + config['webdav']['root']
     print(base_url)
-    response = session.request(f'MKCOL',f'{base_url}/{remote_dir}2/')
-    print(response)
+    response = session.request(f'PROPFIND',f'{base_url}/{remote_dir}/audio',headers={'Depth': '1'})
+    print(WebDavXmlUtils.parse_get_list_response(response.content))
     return
 
     client = Client(options)
