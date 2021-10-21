@@ -91,3 +91,20 @@ after that, the podcast feed will be available under `https://basehost.com/webda
 
 ## Note
 Regenerating `podcastconfig.yaml` won't remove deleted source file entries from the file; however, if the source file is deleted before it gets uploaded, it will cause upload to fail for that file.
+
+password protect or deny access all files except those for podcast such as xml and audio files on the public host for static asset:
+sample nginx config file:
+```
+auth_basic "Restricted";
+        auth_basic_user_file /etc/nginx/passwordfile;
+
+location / {
+        try_files $uri $uri/ =404;
+}
+
+
+# allow podcast related files w/o password
+location ~ "\.(xml|mp3|mp4|m4a|aac)$" {
+    auth_basic off;
+}
+```
