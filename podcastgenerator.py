@@ -15,16 +15,15 @@ from natsort import natsorted
 import logging
 import keyring
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from webdav3.client import Client
 import yaml
 from datetime import datetime, timezone
 from datetime import timedelta
 from urllib.parse import urlparse, urlunparse, quote
-from requests.auth import HTTPBasicAuth
-import requests
+import easywebdav
+from urllib.parse import urlparse
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 mime_extension_mapping = {
@@ -169,7 +168,7 @@ def uploadpodcast(args):
         dataconf = yaml.safe_load(stream)
     config = dataconf['config']
 
-    remote_dir = config['remote']['base_folder']
+    remote_dir = '/' + config['webdav']['root'] + '/' + config['remote']['base_folder']
 
     password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
     options = {
@@ -181,14 +180,17 @@ def uploadpodcast(args):
 
     audio_dir = remote_dir + '/audio'
 
-    client = Client(options)
-    client.verify = True  # To not check SSL certificates (Default = True)
-    #client.session.proxies(...)  # To set proxy directly into the session (Optional)
-    #client.session.auth(...)  # To set proxy auth directly into the session (Optional)
-    client.mkdir(remote_dir)
-    client.mkdir(audio_dir)
+    o = urlparse(config['webdav']['hostname'])
 
-    alllist = client.list(audio_dir,get_info=True)
+    webdav = easywebdav.connect(protocol = o.scheme, host=o.netloc, username=config['webdav']['login'], password=password)
+
+
+    webdav.mkdir(remote_dir)
+    webdav.mkdir(audio_dir)
+
+    alllist = webdav.ls(audio_dir)
+    print(alllist)
+    return
     filelist = list(filter(lambda item: not item['isdir'], alllist))
     filenames = list(map(lambda item: item['name'], filelist))
     #print(alllist)

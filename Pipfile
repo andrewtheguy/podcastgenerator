@@ -10,7 +10,7 @@ tinytag = "*"
 natsort = "*"
 keyring = "*"
 jinja2 = "*"
-webdavclient3 = "*"
+easywebdav = "*"
 
 [dev-packages]
 
