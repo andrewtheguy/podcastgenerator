@@ -40,14 +40,36 @@ parser = ArgumentParser(
 subparsers = parser.add_subparsers(help="Command")
 parser.set_defaults(command=lambda _: parser.print_help())
 
-cmd_new = subparsers.add_parser(
+cmd_init = subparsers.add_parser(
+    "init",
+    description="init project and remote dir, remote key must not exists",
+    epilog="These fields all fill out a template and are easily changed later,"
+           " in particular description should probably be longer than is"
+           " conveniently given as an option.")
+
+cmd_init.add_argument('-d', '--directory', help='directory', required=True)
+
+def init_project(args):
+    directory = args.directory
+    dir = os.path.abspath(directory)
+
+    if not os.path.isdir(dir):
+        raise RuntimeError(f'{dir} is not a folder')
+
+    podcast_generator = PodcastGenerator(directory=dir,init=True)
+
+
+cmd_init.set_defaults(command=init_project)
+
+
+cmd_generate = subparsers.add_parser(
     "generate",
     description="generate podcast info in a folder from new files, it will not update podcast feed",
     epilog="These fields all fill out a template and are easily changed later,"
            " in particular description should probably be longer than is"
            " conveniently given as an option.")
 
-cmd_new.add_argument('-d','--directory', help='directory', required=True)
+cmd_generate.add_argument('-d', '--directory', help='directory', required=True)
 
 
 def process_directory(args):
@@ -130,7 +152,7 @@ def process_directory(args):
         #yaml.dump(data, outfile, Dumper=MyDumper, encoding='utf-8', allow_unicode=True, default_flow_style=False, sort_keys=False)
         yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
 
-cmd_new.set_defaults(command=process_directory)
+cmd_generate.set_defaults(command=process_directory)
 
 cmd_upload = subparsers.add_parser(
     "upload",
@@ -143,7 +165,7 @@ cmd_upload.add_argument('-d','--directory', help='directory', required=True)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
 
 class PodcastGenerator:
-    def __init__(self, directory):
+    def __init__(self, directory,init=False):
         keylocalfilepath = directory+ '/' + 'channelkey.txt'
 
         config_filename = 'podcastconfig.yaml'
@@ -172,10 +194,17 @@ class PodcastGenerator:
         client.verify = True  # To not check SSL certificates (Default = True)
         # client.session.proxies(...)  # To set proxy directly into the session (Optional)
         # client.session.auth(...)  # To set proxy auth directly into the session (Optional)
-        client.mkdir(remote_dir)
 
         remote_key_path = remote_dir + '/' + 'channelkey.txt'
         remote_key_exists = client.check(remote_key_path)
+
+        if init:
+            if(remote_key_exists):
+                raise RuntimeError('cannot init when remote key exists')
+            client.mkdir(remote_dir)
+        elif not remote_key_exists:
+            raise RuntimeError(
+                f'remote key doesnt exists under {remote_dir}, init first if it is a new project')
 
         if not os.path.isfile(keylocalfilepath):
             if remote_key_exists:
