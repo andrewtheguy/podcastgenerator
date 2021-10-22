@@ -29,7 +29,7 @@ config:
     description: "no description"
   remote:
     base_host: "https://basehost.com"
-    base_folder: "folder1"
+    base_folder: "folder1" # use a random suffix to avoid people guessing its name
   webdav:
     hostname: "https://webdavhost.com"
     root: "webdav"

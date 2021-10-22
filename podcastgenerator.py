@@ -350,10 +350,11 @@ def uploadpodcast(args):
     with open(feed_file, 'w') as f:
         f.write(feed)
 
+    logging.info(f"uploading config files and feed")
     client.upload_sync(remote_path=remote_dir+f'/{podcast_generator.config_filename}', local_path=podcast_generator.config_file)
     client.upload_sync(remote_path=remote_dir+f'/{info_filename}', local_path=info_file)
     client.upload_sync(remote_path=remote_dir+f'/feed.xml', local_path=feed_file)
-
+    logging.info(f"finished uploading")
 
 
 def query_yes_no(question, default="yes"):
