@@ -108,3 +108,10 @@ location ~ "\.(xml|mp3|mp4|m4a|aac)$" {
     auth_basic off;
 }
 ```
+# Sample wrapper script
+create ~/bin/podcastgenerator.sh with content similar to this and make it executable
+```
+#!/bin/bash
+
+exec /Users/andrew/.local/share/virtualenvs/podcastgenerator-PTp5dkkQ/bin/python /Users/andrew/codes/podcastgenerator/podcastgenerator.py "$@"
+```
