@@ -43,15 +43,13 @@ parser.set_defaults(command=lambda _: parser.print_help())
 
 cmd_init = subparsers.add_parser(
     "init",
-    description="init project and remote dir, remote key must not exists",
-    epilog="These fields all fill out a template and are easily changed later,"
-           " in particular description should probably be longer than is"
-           " conveniently given as an option.")
+    description="init project and remote dir, podcastconfig.yaml must exist in local folder, remote key must not exists",
+    epilog="")
 
-cmd_init.add_argument('-d', '--directory', help='directory', required=True)
+cmd_init.add_argument('-d', '--directory', help='directory', required=False)
 
 def init_project(args):
-    directory = args.directory
+    directory = args.directory or os.getcwd()
     dir = os.path.abspath(directory)
 
     if not os.path.isdir(dir):
@@ -70,11 +68,11 @@ cmd_generate = subparsers.add_parser(
            " in particular description should probably be longer than is"
            " conveniently given as an option.")
 
-cmd_generate.add_argument('-d', '--directory', help='directory', required=True)
+cmd_generate.add_argument('-d', '--directory', help='directory', required=False)
 
 
 def process_directory(args):
-    directory = args.directory
+    directory = args.directory or os.getcwd()
     dir = os.path.abspath(directory)
 
     if not os.path.isdir(dir):
@@ -162,7 +160,7 @@ cmd_upload = subparsers.add_parser(
            " in particular description should probably be longer than is"
            " conveniently given as an option.")
 
-cmd_upload.add_argument('-d','--directory', help='directory', required=True)
+cmd_upload.add_argument('-d','--directory', help='directory', required=False)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
 
 class PodcastGenerator:
@@ -247,7 +245,7 @@ class PodcastGenerator:
         self.key = key
 
 def uploadpodcast(args):
-    argdir = args.directory
+    argdir = args.directory or os.getcwd()
     delete_extra = args.delete_extra
     dir = os.path.abspath(argdir)
     if not os.path.isdir(dir):
