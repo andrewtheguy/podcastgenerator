@@ -34,6 +34,88 @@ mime_extension_mapping = {
     'audio/mp4a-latm':'.m4a'
 }
 
+
+class PodcastGenerator:
+    def __init__(self, directory,init=False):
+        keylocalfilepath = directory+ '/' + 'channelkey.txt'
+
+        config_filename = 'podcastconfig.yaml'
+        config_file = f'{directory}/{config_filename}'
+        if not os.path.isfile(config_file):
+            raise RuntimeError(f'{config_file} is not a file')
+
+        with open(config_file, "r") as stream:
+            dataconf = yaml.safe_load(stream)
+        config = dataconf['config']
+
+        remote_dir = config['remote']['base_folder']
+
+        password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
+        options = {
+            'webdav_hostname': config['webdav']['hostname'],
+            'webdav_login': config['webdav']['login'],
+            'webdav_root': config['webdav']['root'],
+            'webdav_password': password
+        }
+
+        audio_dir = remote_dir + '/audio'
+
+
+        client = Client(options)
+        client.verify = True  # To not check SSL certificates (Default = True)
+        # client.session.proxies(...)  # To set proxy directly into the session (Optional)
+        # client.session.auth(...)  # To set proxy auth directly into the session (Optional)
+
+        remote_key_path = remote_dir + '/' + 'channelkey.txt'
+        remote_key_exists = client.check(remote_key_path)
+
+        if init:
+            if(remote_key_exists):
+                raise RuntimeError('cannot init when remote key exists')
+            client.mkdir(remote_dir)
+        elif not remote_key_exists:
+            raise RuntimeError(
+                f'remote key doesnt exists under {remote_dir}, init first if it is a new project')
+
+        if not os.path.isfile(keylocalfilepath):
+            if remote_key_exists:
+                raise ValueError('remote key exists while not local, copy the key to local if the local directory is correct')
+            with open(keylocalfilepath, "w") as stream:
+                key_from_dir = secrets.token_urlsafe(32)
+                stream.write(key_from_dir)
+        else:
+            with open(keylocalfilepath, "r") as stream:
+                key_from_dir = stream.read()
+
+        if (len(key_from_dir) < 5):
+            raise ValueError('invalid local key length')
+
+
+        if not remote_key_exists:
+            client.upload_sync(remote_path=remote_key_path, local_path=keylocalfilepath)
+            key = key_from_dir
+        else: #remote exists
+            str = BytesIO()
+            client.download_from(str,remote_path = remote_key_path)
+            key = str.getvalue().decode('UTF-8')
+        #print(key)
+        if(key_from_dir != key):
+            raise ValueError('channelkey.txt need to match server')
+
+        client.mkdir(audio_dir)
+
+        self.config_filename = config_filename
+        self.config_file = config_file
+        self.client = client
+        self.remote_dir = remote_dir
+        self.audio_dir = audio_dir
+        self.channel = config['channel']
+        self.config = config
+        self.audio_base_path = urlunparse(urlparse(
+            config['remote']['base_host'] + '/' + config['webdav']['root'] + '/' + config['remote'][
+                'base_folder'] + '/audio'))
+        self.key = key
+
 parser = ArgumentParser(
     description=f"Publish podcasts on IPFS"
 )
@@ -163,86 +245,6 @@ cmd_upload = subparsers.add_parser(
 cmd_upload.add_argument('-d','--directory', help='directory', required=False)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
 
-class PodcastGenerator:
-    def __init__(self, directory,init=False):
-        keylocalfilepath = directory+ '/' + 'channelkey.txt'
-
-        config_filename = 'podcastconfig.yaml'
-        config_file = f'{directory}/{config_filename}'
-        if not os.path.isfile(config_file):
-            raise RuntimeError(f'{config_file} is not a file')
-
-        with open(config_file, "r") as stream:
-            dataconf = yaml.safe_load(stream)
-        config = dataconf['config']
-
-        remote_dir = config['remote']['base_folder']
-
-        password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
-        options = {
-            'webdav_hostname': config['webdav']['hostname'],
-            'webdav_login': config['webdav']['login'],
-            'webdav_root': config['webdav']['root'],
-            'webdav_password': password
-        }
-
-        audio_dir = remote_dir + '/audio'
-
-
-        client = Client(options)
-        client.verify = True  # To not check SSL certificates (Default = True)
-        # client.session.proxies(...)  # To set proxy directly into the session (Optional)
-        # client.session.auth(...)  # To set proxy auth directly into the session (Optional)
-
-        remote_key_path = remote_dir + '/' + 'channelkey.txt'
-        remote_key_exists = client.check(remote_key_path)
-
-        if init:
-            if(remote_key_exists):
-                raise RuntimeError('cannot init when remote key exists')
-            client.mkdir(remote_dir)
-        elif not remote_key_exists:
-            raise RuntimeError(
-                f'remote key doesnt exists under {remote_dir}, init first if it is a new project')
-
-        if not os.path.isfile(keylocalfilepath):
-            if remote_key_exists:
-                raise ValueError('remote key exists while not local, copy the key to local if the local directory is correct')
-            with open(keylocalfilepath, "w") as stream:
-                key_from_dir = secrets.token_urlsafe(32)
-                stream.write(key_from_dir)
-        else:
-            with open(keylocalfilepath, "r") as stream:
-                key_from_dir = stream.read()
-
-        if (len(key_from_dir) < 5):
-            raise ValueError('invalid local key length')
-
-
-        if not remote_key_exists:
-            client.upload_sync(remote_path=remote_key_path, local_path=keylocalfilepath)
-            key = key_from_dir
-        else: #remote exists
-            str = BytesIO()
-            client.download_from(str,remote_path = remote_key_path)
-            key = str.getvalue().decode('UTF-8')
-        #print(key)
-        if(key_from_dir != key):
-            raise ValueError('channelkey.txt need to match server')
-
-        client.mkdir(audio_dir)
-
-        self.config_filename = config_filename
-        self.config_file = config_file
-        self.client = client
-        self.remote_dir = remote_dir
-        self.audio_dir = audio_dir
-        self.channel = config['channel']
-        self.config = config
-        self.audio_base_path = urlunparse(urlparse(
-            config['remote']['base_host'] + '/' + config['webdav']['root'] + '/' + config['remote'][
-                'base_folder'] + '/audio'))
-        self.key = key
 
 def uploadpodcast(args):
     argdir = args.directory or os.getcwd()
