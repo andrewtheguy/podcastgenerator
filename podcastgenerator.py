@@ -173,7 +173,7 @@ def process_directory(args):
     elif timestamp_strategy == 'modified':
         pass
     else:
-        raise ValueError("only generate_method: 'seed_ts' is supported for now")
+        raise ValueError("only generate_method: 'seed_ts' and 'modified' is supported for now")
 
     info_file = f'{dir}/podcastinfo.yaml'
 
