@@ -48,7 +48,7 @@ run `python3`
 
 ```
 import keyring
-keyring.set_password("podcastgenerator", "andrew_for_webdav", "password")
+keyring.set_password("podcastgenerator", "(value under webdav.password_keyring from podcastconfig.yaml)", "password")
 ```
 
 ## generate
