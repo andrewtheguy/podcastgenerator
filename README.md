@@ -52,6 +52,7 @@ it will sort the new files before adding to list, but not existing ones yet
 ./main.py generate --directory=/directory_with_audio
 ```
 it will generate a `podcastinfo.yaml` with the following data for each audio file:
+if --directory is not passed, it'll use current working directory
 ```
 -   file: filename1.m4a
     file_type: video/mp4
@@ -79,6 +80,7 @@ it will generate a `podcastinfo.yaml` with the following data for each audio fil
 ```
 
 ## upload
+if --directory is not passed, it'll use current working directory
 ```
 ./main.py upload --directory=/directory_with_audio
 ```
