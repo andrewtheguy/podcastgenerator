@@ -8,6 +8,7 @@ import os
 import sys
 import glob
 import hashlib
+import pathlib
 from pathlib import Path
 from tinytag import TinyTag
 from natsort import natsorted
