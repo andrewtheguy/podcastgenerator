@@ -8,7 +8,6 @@ import os
 import sys
 import glob
 import hashlib
-import mimetypes
 from pathlib import Path
 from tinytag import TinyTag
 from natsort import natsorted
@@ -31,7 +30,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 mime_extension_mapping = {
-    'audio/mp4a-latm':'.m4a'
+    ".m4a":"audio/mp4a-latm"
 }
 
 
@@ -212,7 +211,9 @@ def process_directory(args):
             logging.info(f'hash_md5 {hash_md5} for {file} already exists, skipping')
             continue
         #file_len = Path(file).stat().st_size
-        file_type = mimetypes.guess_type(file)[0]
+        file_extension = pathlib.Path(file).suffix
+
+        file_type = mime_extension_mapping[file_extension]
 
         tag = TinyTag.get(file)
 
@@ -226,6 +227,7 @@ def process_directory(args):
                       'hash_md5': hash_md5,
                       'timestamp': ts.isoformat(),
                       'file_type': file_type,
+                      'file_extension': file_extension,
                       'tag': tag.as_dict(),
                       })
         #count = count + 1
@@ -277,7 +279,7 @@ def uploadpodcast(args):
     now = datetime.now(timezone.utc)
 
     for obj in data["items"]:
-        ext = mime_extension_mapping[obj['file_type']]
+        ext = obj['file_extension']
         filename = obj['hash_md5'] + ext
         remote_path = audio_dir + '/' + filename
         if(filename not in files_set):
@@ -315,7 +317,7 @@ def uploadpodcast(args):
     episodes = []
 
     for obj in data["items"]:
-        ext = mime_extension_mapping[obj['file_type']]
+        ext = obj['file_type']
         link = podcast_generator.audio_base_path + '/'+obj['hash_md5'] + ext
         enclosure = {'file_len': obj['tag']['filesize'], "file_type": obj['file_type']}
 
