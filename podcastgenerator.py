@@ -31,7 +31,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 mime_extension_mapping = {
-    ".m4a":"audio/mp4a-latm"
+    ".m4a":"audio/mp4"
 }
 
 
