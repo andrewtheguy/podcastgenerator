@@ -117,7 +117,7 @@ class PodcastGenerator:
         self.key = key
 
 parser = ArgumentParser(
-    description=f"Publish podcasts on IPFS"
+    description=f"Publish podcasts"
 )
 
 subparsers = parser.add_subparsers(help="Command")
