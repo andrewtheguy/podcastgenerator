@@ -318,7 +318,7 @@ def uploadpodcast(args):
     episodes = []
 
     for obj in data["items"]:
-        ext = obj['file_type']
+        ext = obj['file_extension']
         link = podcast_generator.audio_base_path + '/'+obj['hash_md5'] + ext
         enclosure = {'file_len': obj['tag']['filesize'], "file_type": obj['file_type']}
 
