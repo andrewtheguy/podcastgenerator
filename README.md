@@ -51,6 +51,8 @@ import keyring
 keyring.set_password("podcastgenerator", "(value under webdav.password_keyring from podcastconfig.yaml)", "password")
 ```
 
+see `setpassword_sample.py` for example. 
+
 ## generate
 ```
 ./main.py generate --directory=/directory_with_audio
