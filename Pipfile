@@ -11,6 +11,7 @@ natsort = "*"
 keyring = "*"
 jinja2 = "*"
 webdavclient3 = "*"
+cloudflare = "*"
 
 [dev-packages]
 

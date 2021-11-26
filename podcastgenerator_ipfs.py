@@ -5,6 +5,7 @@ from argparse import ArgumentError, ArgumentParser
 
 import argparse
 import os
+import re
 import sys
 import glob
 import hashlib
@@ -27,6 +28,7 @@ import secrets
 from datetime import datetime, timezone
 from web3client import Web3Client
 import urllib
+import CloudFlare
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -54,6 +56,7 @@ class PodcastGenerator:
 
         webdav_password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
         web3_api_key = keyring.get_password("podcastgenerator", config['ipfs']['web3_api_keyring'])
+        cloudflare_dns_api_token = keyring.get_password("podcastgenerator", config['ipfs']['cloudflare_dns_api_token_keyring'])
 
         options = {
             'webdav_hostname': config['webdav']['hostname'],
@@ -118,6 +121,7 @@ class PodcastGenerator:
             config['ipfs']['base_host']))
         self.key = key
         self.web3client = web3client
+        self.cloudflare_dns_api_token = cloudflare_dns_api_token
 
 parser = ArgumentParser(
     description=f"Publish podcasts"
@@ -147,11 +151,9 @@ cmd_init.set_defaults(command=init_project)
 
 
 cmd_generate = subparsers.add_parser(
-    "generate",
-    description="generate podcast info in a folder from new files, it will not update podcast feed",
-    epilog="These fields all fill out a template and are easily changed later,"
-           " in particular description should probably be longer than is"
-           " conveniently given as an option.")
+    "add_files",
+    description="add new files in a folder to podcast info yml, it will not update podcast feed or upload",
+    epilog="")
 
 cmd_generate.add_argument('-d', '--directory', help='directory', required=False)
 
@@ -240,16 +242,38 @@ def process_directory(args):
 
 cmd_generate.set_defaults(command=process_directory)
 
+def publish_to_ipns(cid,podcast_generator):
+    cf = CloudFlare.CloudFlare(token = podcast_generator.cloudflare_dns_api_token)
+    # cloudflare
+    subdomain_name = podcast_generator.remote_dir
+
+    zone_name = 'planethub.info'
+    r = cf.zones.get(params={'name': zone_name})[0]
+    
+    zone_id = r['id']
+    record_name = '_dnslink.'+subdomain_name
+    # DNS records to create
+    new_record = {'name': record_name, 'type':'TXT','content': f'dnslink=/ipfs/{cid}'}
+
+    dns_record = cf.zones.dns_records.get(zone_id, params={'name': record_name + '.' + zone_name })
+
+    dns_record_id = dns_record[0]['id'] if dns_record else None
+
+    if dns_record_id:
+        r = cf.zones.dns_records.put(zone_id, dns_record_id, data=new_record)
+    else:
+        r = cf.zones.dns_records.post(zone_id, data=new_record)
+    
+
+    print(f"podcast published under {podcast_generator.ipfs_host}/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+
 cmd_upload = subparsers.add_parser(
     "upload",
-    description="upload podcast to webdav and then generate feed",
-    epilog="These fields all fill out a template and are easily changed later,"
-           " in particular description should probably be longer than is"
-           " conveniently given as an option.")
+    description="upload podcast files and updated feed to ipfs",
+    epilog="")
 
 cmd_upload.add_argument('-d','--directory', help='directory', required=False)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
-
 
 def uploadpodcast(args):
     argdir = args.directory or os.getcwd()
@@ -345,11 +369,15 @@ def uploadpodcast(args):
     with open(info_file, 'w') as outfile:
         yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
 
-    logging.info(f"uploading config files and feed")
+    logging.info(f"backing up config files and feed")
     client.upload_sync(remote_path=remote_dir+f'/{podcast_generator.config_filename}', local_path=podcast_generator.config_file)
     client.upload_sync(remote_path=remote_dir+f'/{podcast_generator.info_filename}', local_path=info_file)
     client.upload_sync(remote_path=remote_dir+f'/feed.xml', local_path=feed_file)
     logging.info(f"finished uploading")
+    ipfs_cid = podcast_generator.web3client.upload_to_web3storage(feed_file, remote_dir+'_feed.xml')
+    if(len(ipfs_cid)==0):
+        raise ValueError('cid cannot be empty')
+    publish_to_ipns(ipfs_cid,podcast_generator)    
 
 cmd_upload.set_defaults(command=uploadpodcast)
 
@@ -389,7 +417,7 @@ def query_yes_no(question, default="yes"):
 
 cmd_restore = subparsers.add_parser(
     "restore",
-    description="restore original filename from md5 hashed filenames",
+    description="restore original filename from md5 hashed filenames, files need to be downloaded manually first",
     epilog="")
 
 cmd_restore.add_argument('-d','--directory', help='directory', required=False)
