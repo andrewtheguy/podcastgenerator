@@ -26,6 +26,7 @@ from io import StringIO, BytesIO
 import secrets
 from datetime import datetime, timezone
 from web3client import Web3Client
+import urllib
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -299,8 +300,7 @@ def uploadpodcast(args):
     episodes = []
 
     for obj in data["items"]:
-        #ext = obj['file_extension']
-        link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']
+        
         enclosure = {'file_len': obj['tag']['filesize'], "file_type": obj['file_type']}
 
         date = datetime.fromisoformat(obj['timestamp'])
@@ -314,6 +314,13 @@ def uploadpodcast(args):
         datestr = date.strftime("%a, %d %b %Y %H:%M:%S %z")
 
         filename, file_extension = os.path.splitext(obj['file'])
+
+        # use this one instead because it is based on content type instead of filename
+        ext = obj['file_extension']        
+        filename_ipfs = obj['hash_md5'] + ext
+
+        link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'?filename='+urllib.parse.quote_plus(filename_ipfs)
+
 
         episodes.append({
             'title': obj['tag']['title'] or filename,
