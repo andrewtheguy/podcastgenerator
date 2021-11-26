@@ -15,7 +15,7 @@ pipenv shell
 ```
 
 ## create config file
-Create a yaml file `podcastconfig.yaml` in the directory with the following info
+Create a yaml file `podcastconfig_ipfs.yaml` in the directory with the following info
 ```
 config:
   timestamp:
@@ -30,7 +30,7 @@ config:
   remote:
     base_host: "https://basehost.com"
     base_folder: "folder1" # use a random suffix to avoid people guessing its name
-  webdav: # for backing up config and feed
+  webdav: # for backing up config and feed, might be removed in the future
     hostname: "https://webdavserver/"
     root: "webdav"
     login: "podcast"
