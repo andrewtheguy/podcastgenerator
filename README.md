@@ -60,9 +60,9 @@ see `setpassword_sample.py` for example.
 
 ## generate
 ```
-./main.py add_files --directory=/directory_with_audio
+./podcast_generator_ipfs.py add_files --directory=/directory_with_audio
 ```
-it will generate a `podcastinfo.yaml` with the following data for each audio file:
+it will generate a `podcastinfo_ipfs.yaml` with the following data for each audio file:
 if --directory is not passed, it'll use current working directory
 ```
 -   file: filename1.m4a
@@ -95,12 +95,20 @@ if --directory is not passed, it'll use current working directory
 ```
 ./main.py upload --directory=/directory_with_audio
 ```
-upload and delete extra
+### upload and delete extra (not supported by web3.storage)
 ```
 ./main.py upload --directory=/directory_with_audio --delete-extra
 ```
 
-after that, the podcast feed will be available under `https://basehost.com/webdav/folder1/feed.xml`
+will upload those w/o ipfs_cid and then save the new cid to podcastinfo_ipfs.yaml
+```
+-   file: filename1.m4a
+    file_type: video/mp4
+    ...
+    ipfs_cid: cid for the file wrapped with directory in this format cid/md5sum.extension
+```
+
+after that, the podcast feed will be available under the outputed url like `https://ipfs.io/ipns/domain?filename=feed.xml`
 
 ## Note
 Regenerating `podcastconfig.yaml` won't remove deleted source file entries from the file; however, if the source file is deleted before it gets uploaded, it will cause upload to fail for that file.

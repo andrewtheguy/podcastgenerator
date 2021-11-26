@@ -272,6 +272,11 @@ def publish_to_ipns(cid,podcast_generator):
 
     logging.info(f"podcast published under {podcast_generator.ipfs_host}/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
+def get_filename_ipfs(obj):
+    ext = obj['file_extension']        
+    filename_ipfs = obj['hash_md5'] + ext
+    return filename_ipfs
+
 cmd_upload = subparsers.add_parser(
     "upload",
     description="upload podcast files and updated feed to ipfs",
@@ -306,10 +311,9 @@ def uploadpodcast(args):
     tmpdir = dir+'/'+'tmp'
     os.makedirs(tmpdir,exist_ok=True)
     for obj in data["items"]:
-        #if('ipfs_cid' not in obj):
-            local_path = os.path.join(dir, obj['file'])
-            ext = obj['file_extension']        
-            filename_ipfs = obj['hash_md5'] + ext
+        if('ipfs_cid' not in obj):
+            local_path = os.path.join(dir, obj['file'])  
+            filename_ipfs = get_filename_ipfs(obj)
             upload_path = tmpdir+'/'+filename_ipfs
             try:
                 Path(upload_path).unlink(missing_ok=True)
@@ -357,8 +361,7 @@ def uploadpodcast(args):
         filename, file_extension = os.path.splitext(obj['file'])
 
         ## use this one instead because it matches destination
-        ext = obj['file_extension']        
-        filename_ipfs = obj['hash_md5'] + ext
+        filename_ipfs = get_filename_ipfs(obj)
 
         #link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'?filename='+urllib.parse.quote_plus(filename_ipfs)
 
@@ -442,9 +445,9 @@ cmd_restore = subparsers.add_parser(
 
 cmd_restore.add_argument('-d','--directory', help='directory', required=False)
 
-def download_with_curl(hash,dest):
+def download_with_curl(cid,filename,dest):
 
-    url = f"https://ipfs.io/ipfs/{hash}" 
+    url = f"https://ipfs.io/ipfs/{cid}/{filename}" 
 
     p = Popen(["curl", url,'-o',dest] , stdout=DEVNULL, stderr=PIPE)
     p.wait() # wait for process to finish; this also sets the returncode variable inside 'res'
@@ -456,7 +459,7 @@ def download_with_curl(hash,dest):
         logging.info(f'finished downloading through {url}')
 
 
-def restore_filenames(args):
+def restore_from_ipfs(args):
     argdir = args.directory or os.getcwd()
     dir = os.path.abspath(argdir)
     if not os.path.isdir(dir):
@@ -476,16 +479,17 @@ def restore_filenames(args):
             orig_path = os.path.join(dir, obj['file'])
             if(os.path.isfile(orig_path)):
                 continue # skip
-            hashed_path = os.path.join(dir, obj['hash_md5']+obj['file_extension'])
+            filename_ipfs = get_filename_ipfs(obj)
+            hashed_path = os.path.join(dir, filename_ipfs)
             if(not os.path.isfile(hashed_path)):
-                download_with_curl(obj['ipfs_cid'],hashed_path)
+                download_with_curl(obj['ipfs_cid'],filename_ipfs,hashed_path)
             if(os.path.isfile(hashed_path)):
                 os.rename(hashed_path,orig_path)
             
 
 
 
-cmd_restore.set_defaults(command=restore_filenames)
+cmd_restore.set_defaults(command=restore_from_ipfs)
 
 # Finally, use the new parser
 all_args = parser.parse_args()
