@@ -306,18 +306,18 @@ def uploadpodcast(args):
     tmpdir = dir+'/'+'tmp'
     os.makedirs(tmpdir,exist_ok=True)
     for obj in data["items"]:
-        if('ipfs_cid' not in obj):
+        #if('ipfs_cid' not in obj):
             local_path = os.path.join(dir, obj['file'])
             ext = obj['file_extension']        
             filename_ipfs = obj['hash_md5'] + ext
             upload_path = tmpdir+'/'+filename_ipfs
             try:
-                os.unlink(upload_path)
+                Path(upload_path).unlink(missing_ok=True)
                 os.symlink(local_path,upload_path)
                 #ext = obj['file_extension']
                 ipfs_cid = podcast_generator.web3client.upload_to_web3storage(upload_path, obj['file'] ,wrap_directory=True)
             finally:    
-                os.unlink(upload_path)
+                Path(upload_path).unlink(missing_ok=True)
             if(len(ipfs_cid)==0):
                 raise ValueError('cid cannot be empty')
             obj['ipfs_cid'] = ipfs_cid
