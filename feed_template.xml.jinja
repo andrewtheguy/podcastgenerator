@@ -35,13 +35,13 @@
       <itunes:summary><![CDATA[]]></itunes:summary>
       <description>Podcast Episode</description>
     <link>{{ episode.link }}</link>
-    <guid>{{ episode.hash_md5 }}</guid>
+    <guid isPermaLink="false">{{ episode.hash_md5 }}</guid>
       <enclosure
         url="{{ episode.link }}"
         length="{{ episode.enclosure.file_len }}"
         type="{{ episode.enclosure.file_type }}" />
       {# <!--<itunes:duration>45:00</itunes:duration>-->#}
-      <author>{{ episode.author }}</author>
+      <author>test@nospam.com (None)</author>
       <itunes:author>{{ episode.author }}</itunes:author>
       <itunes:explicit>no</itunes:explicit>
       <pubDate>{{ episode.date }}</pubDate>
