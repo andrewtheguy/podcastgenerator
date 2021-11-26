@@ -6,6 +6,7 @@ from argparse import ArgumentError, ArgumentParser
 import argparse
 import os
 import re
+from subprocess import DEVNULL, PIPE, Popen
 import sys
 import glob
 import hashlib
@@ -302,17 +303,29 @@ def uploadpodcast(args):
 
     now = datetime.now(timezone.utc)
 
+    tmpdir = dir+'/'+'tmp'
+    os.makedirs(tmpdir,exist_ok=True)
     for obj in data["items"]:
         if('ipfs_cid' not in obj):
             local_path = os.path.join(dir, obj['file'])
-            #ext = obj['file_extension']
-            ipfs_cid = podcast_generator.web3client.upload_to_web3storage(local_path, obj['file'])
+            ext = obj['file_extension']        
+            filename_ipfs = obj['hash_md5'] + ext
+            upload_path = tmpdir+'/'+filename_ipfs
+            try:
+                os.unlink(upload_path)
+                os.symlink(local_path,upload_path)
+                #ext = obj['file_extension']
+                ipfs_cid = podcast_generator.web3client.upload_to_web3storage(upload_path, obj['file'] ,wrap_directory=True)
+            finally:    
+                os.unlink(upload_path)
             if(len(ipfs_cid)==0):
                 raise ValueError('cid cannot be empty')
             obj['ipfs_cid'] = ipfs_cid
             logging.info(f"saving config file to prevent progress from getting lost")
             with open(info_file, 'w') as outfile:
                 yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
+
+    
 
     env = Environment(
         loader=FileSystemLoader(os.path.dirname(os.path.realpath(__file__))),
@@ -343,12 +356,14 @@ def uploadpodcast(args):
 
         filename, file_extension = os.path.splitext(obj['file'])
 
-        # use this one instead because it is based on content type instead of filename
+        ## use this one instead because it matches destination
         ext = obj['file_extension']        
         filename_ipfs = obj['hash_md5'] + ext
 
         #link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'?filename='+urllib.parse.quote_plus(filename_ipfs)
-        link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']
+
+        # match original filename
+        link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'/'+urllib.parse.quote_plus(filename_ipfs)
 
 
         episodes.append({
@@ -427,6 +442,20 @@ cmd_restore = subparsers.add_parser(
 
 cmd_restore.add_argument('-d','--directory', help='directory', required=False)
 
+def download_with_curl(hash,dest):
+
+    url = f"https://ipfs.io/ipfs/{hash}" 
+
+    p = Popen(["curl", url,'-o',dest] , stdout=DEVNULL, stderr=PIPE)
+    p.wait() # wait for process to finish; this also sets the returncode variable inside 'res'
+    #print(p.returncode)
+    if p.returncode != 0:
+        #print('chafa')
+        raise Exception(f"{url} download failed, exit code {p.returncode}")
+    else:
+        print(f'finished downloading through {url}')
+
+
 def restore_filenames(args):
     argdir = args.directory or os.getcwd()
     dir = os.path.abspath(argdir)
@@ -444,9 +473,16 @@ def restore_filenames(args):
 
     for obj in data["items"]:
         if('hash_md5' in obj and 'file_extension' in obj and 'file' in obj):
-            orig_path = os.path.join(dir, obj['hash_md5']+obj['file_extension'])
+            orig_path = os.path.join(dir, obj['file'])
             if(os.path.isfile(orig_path)):
-                os.rename(orig_path,os.path.join(dir, obj['file']))
+                continue # skip
+            hashed_path = os.path.join(dir, obj['hash_md5']+obj['file_extension'])
+            if(not os.path.isfile(hashed_path)):
+                download_with_curl(obj['ipfs_cid'],hashed_path)
+            if(os.path.isfile(hashed_path)):
+                os.rename(hashed_path,orig_path)
+            
+
 
 
 cmd_restore.set_defaults(command=restore_filenames)

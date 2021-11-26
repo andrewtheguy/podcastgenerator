@@ -4,10 +4,9 @@
   "description": "generate a podcast feed from a directory with audio files and upload it to a webdav server (currently only works with m4a)",
   "main": "",
   "dependencies": {
-    "@andrewtheguy/web3storage": "0.0.1-alpha26",
+    "@andrewtheguy/web3storage": "^0.0.1-alpha27",
     "node": "^16.13.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

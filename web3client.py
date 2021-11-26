@@ -7,10 +7,10 @@ class Web3Client:
     def __init__(self, api_key,):
         self.api_key = api_key
 
-    def upload_to_web3storage(self,path,name = None):
+    def upload_to_web3storage(self,path,name = None,wrap_directory = False):
         my_env = {**os.environ, 'WEB3STORAGE_TOKEN': self.api_key or ''}
         
-        cmd = [f"{sys.path[0]}/node_modules/.bin/node", f"{sys.path[0]}/node_modules/.bin/storetoweb3", path ]
+        cmd = [f"{sys.path[0]}/node_modules/.bin/node", f"{sys.path[0]}/node_modules/.bin/storetoweb3", path, '--wrap-directory', 'yes' if wrap_directory else 'no']
 
         if(name):
             cmd.extend(["--name",name])
