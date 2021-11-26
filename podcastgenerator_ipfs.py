@@ -350,10 +350,10 @@ def uploadpodcast(args):
 
         date = datetime.fromisoformat(obj['timestamp'])
 
-        # if not last_build_date:
-        #     last_build_date = date
-        # elif date > last_build_date:
-        #     last_build_date = date
+        if not last_build_date:
+            last_build_date = date
+        elif date > last_build_date:
+            last_build_date = date
 
 
         datestr = date.strftime("%a, %d %b %Y %H:%M:%S %z")
@@ -378,10 +378,10 @@ def uploadpodcast(args):
             'enclosure': enclosure,
         })
 
-    # if not last_build_date:
-    #     last_build_date = now
+    if not last_build_date:
+         last_build_date = now
 
-    last_build_date = now
+    #last_build_date = now
 
     feed = template.render(channel=channel, episodes=episodes, last_build_date=last_build_date.strftime("%a, %d %b %Y %H:%M:%S %z"))
     feed_file = f'{dir}/feed.xml'
