@@ -270,7 +270,7 @@ def publish_to_ipns(cid,podcast_generator):
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
 
-    print(f"podcast published under {podcast_generator.ipfs_host}/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    logging.info(f"podcast published under {podcast_generator.ipfs_host}/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
 cmd_upload = subparsers.add_parser(
     "upload",
@@ -453,7 +453,7 @@ def download_with_curl(hash,dest):
         #print('chafa')
         raise Exception(f"{url} download failed, exit code {p.returncode}")
     else:
-        print(f'finished downloading through {url}')
+        logging.info(f'finished downloading through {url}')
 
 
 def restore_filenames(args):
