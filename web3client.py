@@ -10,7 +10,7 @@ class Web3Client:
     def upload_to_web3storage(self,path,name = None):
         my_env = {**os.environ, 'WEB3STORAGE_TOKEN': self.api_key or ''}
         
-        cmd = ["npx", "node@16", f"{sys.path[0]}/node_modules/.bin/storetoweb3", path ]
+        cmd = [f"{sys.path[0]}/node_modules/.bin/node", f"{sys.path[0]}/node_modules/.bin/storetoweb3", path ]
 
         if(name):
             cmd.extend(["--name",name])
@@ -25,5 +25,6 @@ class Web3Client:
             # cid
             return result.decode("utf-8").rstrip()
 
-#if __name__ == "__main__":
-#    upload_to_web3storage(sys.argv[1],'test2')        
+if __name__ == "__main__":
+    import keyring
+    Web3Client(keyring.get_password("podcastgenerator", "web3_hpmpnet")).upload_to_web3storage(sys.argv[1],'test2')        

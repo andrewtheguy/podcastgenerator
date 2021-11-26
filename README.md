@@ -123,3 +123,9 @@ create ~/bin/podcastgenerator.sh with content similar to this and make it execut
 
 exec /Users/andrew/.local/share/virtualenvs/podcastgenerator-PTp5dkkQ/bin/python /Users/andrew/codes/podcastgenerator/podcastgenerator.py "$@"
 ```
+
+# ipfs
+```
+it uses a helper library @andrewtheguy/web3storage to upload to web3.storage
+need to run npm install first to use it
+```

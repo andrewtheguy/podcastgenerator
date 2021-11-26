@@ -279,8 +279,11 @@ def uploadpodcast(args):
             #ext = obj['file_extension']
             ipfs_cid = podcast_generator.web3client.upload_to_web3storage(local_path, obj['file'])
             if(len(ipfs_cid)==0):
-                raise ValueError('cid cannot be zero')
+                raise ValueError('cid cannot be empty')
             obj['ipfs_cid'] = ipfs_cid
+            logging.info(f"saving config file to prevent progress from getting lost")
+            with open(info_file, 'w') as outfile:
+                yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
 
     env = Environment(
         loader=FileSystemLoader(os.path.dirname(os.path.realpath(__file__))),
