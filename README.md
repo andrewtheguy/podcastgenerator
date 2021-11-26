@@ -60,7 +60,7 @@ see `setpassword_sample.py` for example.
 
 ## generate
 ```
-./main.py generate --directory=/directory_with_audio
+./main.py add_files --directory=/directory_with_audio
 ```
 it will generate a `podcastinfo.yaml` with the following data for each audio file:
 if --directory is not passed, it'll use current working directory
