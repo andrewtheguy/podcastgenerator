@@ -347,7 +347,8 @@ def uploadpodcast(args):
         ext = obj['file_extension']        
         filename_ipfs = obj['hash_md5'] + ext
 
-        link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'?filename='+urllib.parse.quote_plus(filename_ipfs)
+        #link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'?filename='+urllib.parse.quote_plus(filename_ipfs)
+        link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']
 
 
         episodes.append({
