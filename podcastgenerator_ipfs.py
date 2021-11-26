@@ -54,6 +54,8 @@ class PodcastGenerator:
 
         remote_dir = config['remote']['base_folder']
 
+        cloudflare_zone_name = config['ipfs']['cloudflare_zone_name']
+
         webdav_password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
         web3_api_key = keyring.get_password("podcastgenerator", config['ipfs']['web3_api_keyring'])
         cloudflare_dns_api_token = keyring.get_password("podcastgenerator", config['ipfs']['cloudflare_dns_api_token_keyring'])
@@ -122,6 +124,7 @@ class PodcastGenerator:
         self.key = key
         self.web3client = web3client
         self.cloudflare_dns_api_token = cloudflare_dns_api_token
+        self.cloudflare_zone_name = cloudflare_zone_name
 
 parser = ArgumentParser(
     description=f"Publish podcasts"
@@ -247,7 +250,8 @@ def publish_to_ipns(cid,podcast_generator):
     # cloudflare
     subdomain_name = podcast_generator.remote_dir
 
-    zone_name = 'planethub.info'
+    zone_name = podcast_generator.cloudflare_zone_name
+
     r = cf.zones.get(params={'name': zone_name})[0]
     
     zone_id = r['id']
