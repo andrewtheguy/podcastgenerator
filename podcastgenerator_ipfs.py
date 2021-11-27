@@ -448,9 +448,9 @@ cmd_restore = subparsers.add_parser(
 
 cmd_restore.add_argument('-d','--directory', help='directory', required=False)
 
-def download_with_curl(cid,filename,dest):
+def download_with_curl(ipfs_media_host,cid,filename,dest):
 
-    url = f"https://ipfs.io/ipfs/{cid}/{filename}" 
+    url = ipfs_media_host+f"/ipfs/{cid}/{filename}" 
 
     p = Popen(["curl", url,'-o',dest] , stdout=DEVNULL, stderr=PIPE)
     p.wait() # wait for process to finish; this also sets the returncode variable inside 'res'
@@ -486,7 +486,7 @@ def restore_from_ipfs(args):
             filename_ipfs = get_filename_ipfs(obj)
             hashed_path = os.path.join(dir, filename_ipfs)
             if(not os.path.isfile(orig_path)):
-                download_with_curl(obj['ipfs_cid'],filename_ipfs,hashed_path)
+                download_with_curl(podcast_generator.ipfs_media_host,obj['ipfs_cid'],filename_ipfs,hashed_path)
                 os.rename(hashed_path,orig_path)
                 os.utime(orig_path,(ts,ts))
             
