@@ -105,7 +105,7 @@ will upload those w/o ipfs_cid and then save the new cid to podcastinfo_ipfs.yam
     ipfs_cid: cid for the file wrapped with directory in this format cid/md5sum.extension
 ```
 
-after that, the podcast feed will be available under the outputed url like `https://ipfs.io/ipns/domain?filename=feed.xml`
+after that, the podcast feed will be available under the outputted url like `https://gateway/ipns/domain?filename=feed.xml`
 
 ## Note
 Regenerating `podcastconfig.yaml` won't remove deleted source file entries from the file; however, if the source file is deleted before it gets uploaded, it will cause upload to fail for that file.
