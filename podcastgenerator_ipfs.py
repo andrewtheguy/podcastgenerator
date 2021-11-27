@@ -492,14 +492,38 @@ def restore_from_ipfs(args):
                 download_with_curl(podcast_generator.ipfs_media_host,obj['ipfs_cid'],filename_ipfs,hashed_path)
                 os.utime(hashed_path,(ts,ts))
                 os.rename(hashed_path,orig_path)
-                
-            
+
+# sample script to fix ts of existing files from config                
+def fix_ts():
+    argdir = os.getcwd()
+    dir = os.path.abspath(argdir)
+    if not os.path.isdir(dir):
+        raise RuntimeError(f'{dir} is not a directory')
+
+    podcast_generator = PodcastGenerator(directory=dir)
+
+    info_file = podcast_generator.info_file
+    if not os.path.isfile(info_file):
+        raise RuntimeError(f'{info_file} is not a file')
+
+    with open(info_file, "r") as stream:
+        data = yaml.safe_load(stream)
+
+    tmpdir = dir+'/'+'tmp'
+    os.makedirs(tmpdir,exist_ok=True)
+
+    for obj in data["items"]:
+        ts = parse(obj['timestamp']).timestamp()
+        orig_path = os.path.join(dir, obj['file'])
+        if(os.path.isfile(orig_path)):                
+            os.utime(orig_path,(ts,ts))
 
 
 
 cmd_restore.set_defaults(command=restore_from_ipfs)
 
-# Finally, use the new parser
-all_args = parser.parse_args()
-# Invoke whichever command is appropriate for the arguments
-all_args.command(all_args)
+if __name__ == "__main__":
+    # Finally, use the new parser
+    all_args = parser.parse_args()
+    # Invoke whichever command is appropriate for the arguments
+    all_args.command(all_args)
