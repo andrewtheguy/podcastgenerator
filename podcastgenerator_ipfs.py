@@ -17,7 +17,6 @@ from natsort import natsorted
 import logging
 import keyring
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from webdav3.client import Client
 import yaml
 from datetime import datetime, timezone
 from datetime import timedelta
@@ -31,6 +30,9 @@ from web3client import Web3Client
 import urllib
 import CloudFlare
 from dateutil.parser import parse
+import json
+from google.cloud import storage
+from google.oauth2 import service_account
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -56,40 +58,44 @@ class PodcastGenerator:
 
         remote_dir = config['remote']['base_folder']
 
-        cloudflare_zone_name = config['ipfs']['cloudflare_zone_name']
+        #webdav_password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
+        web3_api_key = keyring.get_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'])
+        cloud_storage_service_account = keyring.get_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'])
 
-        webdav_password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
-        web3_api_key = keyring.get_password("podcastgenerator", config['ipfs']['web3_api_keyring'])
-        cloudflare_dns_api_token = keyring.get_password("podcastgenerator", config['ipfs']['cloudflare_dns_api_token_keyring'])
+        enable_publish_to_ipns = config['enable_publish_to_ipns'] == "yes"
 
-        options = {
-            'webdav_hostname': config['webdav']['hostname'],
-            'webdav_login': config['webdav']['login'],
-            'webdav_root': config['webdav']['root'],
-            'webdav_password': webdav_password
-        }
-
-        client = Client(options)
-        client.verify = True  # To not check SSL certificates (Default = True)
-        # client.session.proxies(...)  # To set proxy directly into the session (Optional)
-        # client.session.auth(...)  # To set proxy auth directly into the session (Optional)
+        cloudflare_zone_name = ""
+        cloudflare_dns_api_token = ""
+        if enable_publish_to_ipns:
+            cloudflare_zone_name = config['ipns']['cloudflare_zone_name']
+            cloudflare_dns_api_token = keyring.get_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'])
 
         web3client = Web3Client(api_key=web3_api_key)
 
         remote_key_path = remote_dir + '/' + 'channelkey.txt'
-        remote_key_exists = client.check(remote_key_path)
+        
+
+
+        storage_credentials = service_account.Credentials.from_service_account_info(json.loads(cloud_storage_service_account))
+
+        # Instantiates a client
+        storage_client = storage.Client(credentials=storage_credentials)
+        bucket_name = config['google_cloud']['config_bucket_name']
+        config_bucket = storage_client.get_bucket(bucket_name)
+        blob = config_bucket.blob(remote_key_path)
+        remote_key_exists = blob.exists()
 
         if init:
             if(remote_key_exists):
                 raise RuntimeError('cannot init when remote key exists')
-            client.mkdir(remote_dir)
         elif not remote_key_exists:
             raise RuntimeError(
                 f'remote key doesnt exists under {remote_dir}, init first if it is a new project')
 
         if not os.path.isfile(keylocalfilepath):
             if remote_key_exists:
-                raise ValueError('remote key exists while not local, copy the key to local if the local directory is correct')
+                rkey = blob.download_as_text()
+                raise ValueError(f'remote key exists while not local, create a file named channelkey.txt with the following key to local if the local directory is correct: {rkey}')
             with open(keylocalfilepath, "w") as stream:
                 key_from_dir = secrets.token_urlsafe(32)
                 stream.write(key_from_dir)
@@ -102,12 +108,10 @@ class PodcastGenerator:
 
 
         if not remote_key_exists:
-            client.upload_sync(remote_path=remote_key_path, local_path=keylocalfilepath)
+            blob.upload_from_filename(keylocalfilepath)
             key = key_from_dir
         else: #remote exists
-            str = BytesIO()
-            client.download_from(str,remote_path = remote_key_path)
-            key = str.getvalue().decode('UTF-8')
+            key = blob.download_as_text()
         #print(key)
         if(key_from_dir != key):
             raise ValueError('channelkey.txt need to match server')
@@ -117,7 +121,7 @@ class PodcastGenerator:
         self.info_file = f'{directory}/{self.info_filename}'
         self.config_filename = config_filename
         self.config_file = config_file
-        self.client = client
+
         self.remote_dir = remote_dir
         self.channel = config['channel']
         self.config = config
@@ -125,8 +129,11 @@ class PodcastGenerator:
             config['ipfs']['media_host']))
         self.key = key
         self.web3client = web3client
+        self.google_storage_client = storage_client
+        self.config_bucket = config_bucket
         self.cloudflare_dns_api_token = cloudflare_dns_api_token
         self.cloudflare_zone_name = cloudflare_zone_name
+        self.enable_publish_to_ipns = enable_publish_to_ipns
 
 parser = ArgumentParser(
     description=f"Publish podcasts"
@@ -171,8 +178,6 @@ def process_directory(args):
         raise RuntimeError(f'{dir} is not a folder')
 
     podcast_generator = PodcastGenerator(directory=dir)
-
-    client = podcast_generator.client
 
     config = podcast_generator.config
 
@@ -247,7 +252,11 @@ def process_directory(args):
 
 cmd_generate.set_defaults(command=process_directory)
 
-def publish_to_ipns(cid,podcast_generator):
+def publish_to_ipns(podcast_generator,path,name):
+    cid = podcast_generator.web3client.upload_to_web3storage(path,name)
+    if(len(cid)==0):
+        raise ValueError('cid cannot be empty')
+        
     cf = CloudFlare.CloudFlare(token = podcast_generator.cloudflare_dns_api_token)
     # cloudflare
     subdomain_name = podcast_generator.remote_dir
@@ -285,12 +294,11 @@ cmd_upload = subparsers.add_parser(
 
 cmd_upload.add_argument('-d','--directory', help='directory', required=False)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
-cmd_upload.add_argument('--skip-ipns', help='skip publish to ipns', default=False, action='store_true')
 
 def uploadpodcast(args):
     argdir = args.directory or os.getcwd()
     delete_extra = args.delete_extra
-    skip_ipns = args.skip_ipns
+
     if(delete_extra):
         raise ArgumentError("delete_extra is not supported by web3.storage")
     dir = os.path.abspath(argdir)
@@ -307,7 +315,8 @@ def uploadpodcast(args):
         data = yaml.safe_load(stream)
 
     remote_dir = podcast_generator.remote_dir
-    client = podcast_generator.client
+
+    enable_publish_to_ipns = podcast_generator.enable_publish_to_ipns
 
     now = datetime.now(timezone.utc)
 
@@ -396,16 +405,14 @@ def uploadpodcast(args):
         yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
 
     logging.info(f"backing up config files and feed")
-    client.upload_sync(remote_path=remote_dir+f'/{podcast_generator.config_filename}', local_path=podcast_generator.config_file)
-    client.upload_sync(remote_path=remote_dir+f'/{podcast_generator.info_filename}', local_path=info_file)
-    client.upload_sync(remote_path=remote_dir+f'/feed.xml', local_path=feed_file)
+    config_bucket = podcast_generator.config_bucket
+    config_bucket.blob(remote_dir+f'/{podcast_generator.config_filename}').upload_from_filename(podcast_generator.config_file)
+    config_bucket.blob(remote_dir+f'/{podcast_generator.info_filename}').upload_from_filename(info_file)
+    config_bucket.blob(remote_dir+f'/feed.xml').upload_from_filename(feed_file)
     logging.info(f"finished uploading")
-    ipfs_cid = podcast_generator.web3client.upload_to_web3storage(feed_file, remote_dir+'_feed.xml')
-    if(len(ipfs_cid)==0):
-        raise ValueError('cid cannot be empty')
 
-    if not skip_ipns:    
-        publish_to_ipns(ipfs_cid,podcast_generator)    
+    if enable_publish_to_ipns:    
+        publish_to_ipns(podcast_generator,feed_file, remote_dir+'_feed.xml')    
 
 cmd_upload.set_defaults(command=uploadpodcast)
 

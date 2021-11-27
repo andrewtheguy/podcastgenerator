@@ -12,6 +12,7 @@ keyring = "*"
 jinja2 = "*"
 webdavclient3 = "*"
 cloudflare = "*"
+google-cloud-storage = "*"
 
 [dev-packages]
 

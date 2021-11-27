@@ -9,6 +9,11 @@ generate a podcast feed from a directory with audio files and upload it to a web
 pipenv install
 ```
 
+## ipfs
+
+it uses a helper library @andrewtheguy/web3storage to upload to web3.storage
+need to run `npm install` first to use it
+
 ## run shell
 ```
 pipenv shell
@@ -18,6 +23,10 @@ pipenv shell
 Create a yaml file `podcastconfig_ipfs.yaml` in the directory with the following info
 ```
 config:
+  enable_publish_to_ipns: 'yes' # publish to ipns
+  google_cloud: 
+    config_bucket_name: 'name' # for backing up config and feed
+    json_token_keyring_name: 'keyringname'
   timestamp:
     # for generate_method, it will sort the new files added and increment the file from seed_ts by a day from top to bottom based on list size starting from 0
     # for modified, it will use the file's modified timestamp
@@ -28,7 +37,6 @@ config:
     link: "https://ipfs.io/"
     description: "no description"
   remote:
-    base_host: "https://basehost.com"
     base_folder: "folder1" # use a random suffix to avoid people guessing its name
   webdav: # for backing up config and feed, might be removed in the future
     hostname: "https://webdavserver/"
@@ -36,17 +44,18 @@ config:
     login: "podcast"
     password_keyring: "podcast"
   ipfs: # for generating url for media and feed
-    media_host: "https://dweb.link" # make sure it supports byte range otherwise apple podcast will complaint
-    web3_api_keyring: "keyringname"
-    cloudflare_dns_api_token_keyring: "keyringname2"
+    media_host: "https://dweb.link" # gateway for podcast media links 
+                                    #make sure it supports byte range otherwise apple podcast will complaint
+    web3_api_keyring_name: "keyringname"
+  ipns: # for generating url for media and feed
+    cloudflare_dns_api_token_keyring_name: "keyringname2"
     cloudflare_zone_name: "cloudflare zone (domain name)"
 ```
 
-will result in podcast url with this setup: `https://basehost.com/webdav/folder1/audio/md5sum_of_file.extension` # base_host is public facing host which might not be the same as webdav host
 
 timestamp `generate_method` supports `seed_ts` and `modified`
 
-it will sort the new files before adding to list, but not existing ones yet
+it will sort the new files before adding to list, but not existing ones
 
 ## set password and api keys on key chain
 
@@ -55,7 +64,7 @@ it will sort the new files before adding to list, but not existing ones yet
 ```
 
 
-## generate
+## generate info file
 ```
 ./podcast_generator_ipfs.py add_files --directory=/directory_with_audio
 ```
@@ -105,12 +114,21 @@ will upload those w/o ipfs_cid and then save the new cid to podcastinfo_ipfs.yam
     ipfs_cid: cid for the file wrapped with directory in this format cid/md5sum.extension
 ```
 
-after that, the podcast feed will be available under the outputed url like `https://ipfs.io/ipns/domain?filename=feed.xml`
+after that, the podcast feed will be available under the outputted url like `https://ipfs.io/ipns/domain?filename=feed.xml`
+
+
+# Sample wrapper script to enable it to run in working directory w/o specifying --directory
+create ~/bin/podcastgenerator.sh with content similar to this and make it executable
+```
+#!/bin/bash
+
+exec /Users/andrew/.local/share/virtualenvs/podcastgenerator-PTp5dkkQ/bin/python /Users/andrew/codes/podcastgenerator/podcastgenerator.py "$@"
+```
 
 ## Note
 Regenerating `podcastconfig.yaml` won't remove deleted source file entries from the file; however, if the source file is deleted before it gets uploaded, it will cause upload to fail for that file.
 
-password protect or deny access all files except those for podcast such as xml and audio files on the public host for static asset:
+if hosting your files in custom server instead, password protect or deny access all files except those for podcast such as xml and audio files on the public host for static asset:
 sample nginx config file:
 ```
 auth_basic "Restricted";
@@ -125,17 +143,4 @@ location / {
 location ~ "\.(xml|mp3|mp4|m4a|aac)$" {
     auth_basic off;
 }
-```
-# Sample wrapper script
-create ~/bin/podcastgenerator.sh with content similar to this and make it executable
-```
-#!/bin/bash
-
-exec /Users/andrew/.local/share/virtualenvs/podcastgenerator-PTp5dkkQ/bin/python /Users/andrew/codes/podcastgenerator/podcastgenerator.py "$@"
-```
-
-# ipfs
-```
-it uses a helper library @andrewtheguy/web3storage to upload to web3.storage
-need to run npm install first to use it
 ```
