@@ -35,8 +35,9 @@ config:
     root: "webdav"
     login: "podcast"
     password_keyring: "podcast"
-  ipfs: # for storing audio and feed
-    base_host: "https://ipfs.io"
+  ipfs: # for generating url for media and feed
+    media_host: "https://ipfs.io"
+    feed_host: "https://gateway.ipfs.io" # keep it separate
     web3_api_keyring: "keyringname"
     cloudflare_dns_api_token_keyring: "keyringname2"
     cloudflare_zone_name: "cloudflare zone (domain name)"

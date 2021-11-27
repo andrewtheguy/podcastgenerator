@@ -120,8 +120,10 @@ class PodcastGenerator:
         self.remote_dir = remote_dir
         self.channel = config['channel']
         self.config = config
-        self.ipfs_host = urlunparse(urlparse(
-            config['ipfs']['base_host']))
+        self.ipfs_media_host = urlunparse(urlparse(
+            config['ipfs']['media_host']))
+        self.ipfs_feed_host = urlunparse(urlparse(
+            config['ipfs']['feed_host']))    
         self.key = key
         self.web3client = web3client
         self.cloudflare_dns_api_token = cloudflare_dns_api_token
@@ -270,7 +272,7 @@ def publish_to_ipns(cid,podcast_generator):
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
 
-    logging.info(f"podcast published under {podcast_generator.ipfs_host}/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    logging.info(f"podcast published under {podcast_generator.ipfs_feed_host}/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
@@ -363,10 +365,10 @@ def uploadpodcast(args):
         ## use this one instead because it matches destination
         filename_ipfs = get_filename_ipfs(obj)
 
-        #link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'?filename='+urllib.parse.quote_plus(filename_ipfs)
+        #link = podcast_generator.ipfs_media_host + '/ipfs/'+obj['ipfs_cid']+'?filename='+urllib.parse.quote_plus(filename_ipfs)
 
         # match original filename
-        link = podcast_generator.ipfs_host + '/ipfs/'+obj['ipfs_cid']+'/'+urllib.parse.quote_plus(filename_ipfs)
+        link = podcast_generator.ipfs_media_host + '/ipfs/'+obj['ipfs_cid']+'/'+urllib.parse.quote_plus(filename_ipfs)
 
 
         episodes.append({
