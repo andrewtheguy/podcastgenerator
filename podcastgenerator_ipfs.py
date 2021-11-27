@@ -271,7 +271,7 @@ def publish_to_ipns(cid,podcast_generator):
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
     # use one that doesn't redirect
-    print(f"podcast published under https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    print(f"https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
