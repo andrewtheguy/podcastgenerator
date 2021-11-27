@@ -48,15 +48,12 @@ timestamp `generate_method` supports `seed_ts` and `modified`
 
 it will sort the new files before adding to list, but not existing ones yet
 
-## set password for webdav
-run `python3`
+## set password and api keys on key chain
 
 ```
-import keyring
-keyring.set_password("podcastgenerator", "(value under webdav.password_keyring from podcastconfig.yaml)", "password")
+./set_password_for_apis.py configfile
 ```
 
-see `setpassword_sample.py` for example. 
 
 ## generate
 ```
