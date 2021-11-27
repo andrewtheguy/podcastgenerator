@@ -271,7 +271,7 @@ def publish_to_ipns(cid,podcast_generator):
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
 
-    logging.info(f"podcast published under https://cloudflare-ipfs.com/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    logging.info(f"podcast published under https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
