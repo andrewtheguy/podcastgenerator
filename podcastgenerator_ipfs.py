@@ -485,10 +485,9 @@ def restore_from_ipfs(args):
                 continue # skip
             filename_ipfs = get_filename_ipfs(obj)
             hashed_path = os.path.join(dir, filename_ipfs)
-            if(not os.path.isfile(hashed_path)):
+            if(not os.path.isfile(orig_path)):
                 download_with_curl(obj['ipfs_cid'],filename_ipfs,hashed_path)
                 os.utime(hashed_path,(ts,ts))
-            if(os.path.isfile(hashed_path)):
                 os.rename(hashed_path,orig_path)
             
 
