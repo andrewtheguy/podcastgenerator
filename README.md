@@ -36,7 +36,7 @@ config:
     login: "podcast"
     password_keyring: "podcast"
   ipfs: # for generating url for media and feed
-    media_host: "https://ipfs.io"
+    media_host: "https://dweb.link" # make sure it supports byte range otherwise apple podcast will complaint
     web3_api_keyring: "keyringname"
     cloudflare_dns_api_token_keyring: "keyringname2"
     cloudflare_zone_name: "cloudflare zone (domain name)"
