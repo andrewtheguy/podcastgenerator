@@ -123,8 +123,6 @@ class PodcastGenerator:
         self.config = config
         self.ipfs_media_host = urlunparse(urlparse(
             config['ipfs']['media_host']))
-        self.ipfs_feed_host = urlunparse(urlparse(
-            config['ipfs']['feed_host']))    
         self.key = key
         self.web3client = web3client
         self.cloudflare_dns_api_token = cloudflare_dns_api_token
@@ -273,7 +271,7 @@ def publish_to_ipns(cid,podcast_generator):
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
 
-    logging.info(f"podcast published under {podcast_generator.ipfs_feed_host}/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    logging.info(f"podcast published under https://cloudflare-ipfs.com/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
