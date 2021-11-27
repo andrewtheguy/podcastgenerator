@@ -452,7 +452,7 @@ def download_with_curl(ipfs_media_host,cid,filename,dest):
 
     url = ipfs_media_host+f"/ipfs/{cid}/{filename}" 
 
-    p = Popen(["curl", url,'-o',dest] , stdout=DEVNULL, stderr=PIPE)
+    p = Popen(["curl","-f", url,'-o',dest] , stdout=DEVNULL, stderr=PIPE)
     p.wait() # wait for process to finish; this also sets the returncode variable inside 'res'
     #print(p.returncode)
     if p.returncode != 0:
