@@ -477,6 +477,9 @@ def restore_from_ipfs(args):
     with open(info_file, "r") as stream:
         data = yaml.safe_load(stream)
 
+    tmpdir = dir+'/'+'tmp'
+    os.makedirs(tmpdir,exist_ok=True)
+
     for obj in data["items"]:
         ts = parse(obj['timestamp']).timestamp()
         if('hash_md5' in obj and 'file_extension' in obj and 'file' in obj):
@@ -484,11 +487,12 @@ def restore_from_ipfs(args):
             if(os.path.isfile(orig_path)):
                 continue # skip
             filename_ipfs = get_filename_ipfs(obj)
-            hashed_path = os.path.join(dir, filename_ipfs)
+            hashed_path = os.path.join(tmpdir, filename_ipfs)
             if(not os.path.isfile(orig_path)):
                 download_with_curl(podcast_generator.ipfs_media_host,obj['ipfs_cid'],filename_ipfs,hashed_path)
+                os.utime(hashed_path,(ts,ts))
                 os.rename(hashed_path,orig_path)
-                os.utime(orig_path,(ts,ts))
+                
             
 
 
