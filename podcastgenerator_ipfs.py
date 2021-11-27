@@ -270,8 +270,8 @@ def publish_to_ipns(cid,podcast_generator):
     else:
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
-
-    logging.info(f"podcast published under https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    # use one that doesn't redirect
+    print(f"podcast published under https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
@@ -285,10 +285,12 @@ cmd_upload = subparsers.add_parser(
 
 cmd_upload.add_argument('-d','--directory', help='directory', required=False)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
+cmd_upload.add_argument('--skip-ipns', help='skip publish to ipns', default=False, action='store_true')
 
 def uploadpodcast(args):
     argdir = args.directory or os.getcwd()
     delete_extra = args.delete_extra
+    skip_ipns = args.skip_ipns
     if(delete_extra):
         raise ArgumentError("delete_extra is not supported by web3.storage")
     dir = os.path.abspath(argdir)
@@ -401,7 +403,9 @@ def uploadpodcast(args):
     ipfs_cid = podcast_generator.web3client.upload_to_web3storage(feed_file, remote_dir+'_feed.xml')
     if(len(ipfs_cid)==0):
         raise ValueError('cid cannot be empty')
-    publish_to_ipns(ipfs_cid,podcast_generator)    
+
+    if not skip_ipns:    
+        publish_to_ipns(ipfs_cid,podcast_generator)    
 
 cmd_upload.set_defaults(command=uploadpodcast)
 
