@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from web3client import Web3Client
 import urllib
 import CloudFlare
+from dateutil.parser import parse
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -477,6 +478,7 @@ def restore_from_ipfs(args):
         data = yaml.safe_load(stream)
 
     for obj in data["items"]:
+        ts = parse(obj['timestamp']).timestamp()
         if('hash_md5' in obj and 'file_extension' in obj and 'file' in obj):
             orig_path = os.path.join(dir, obj['file'])
             if(os.path.isfile(orig_path)):
@@ -485,6 +487,7 @@ def restore_from_ipfs(args):
             hashed_path = os.path.join(dir, filename_ipfs)
             if(not os.path.isfile(hashed_path)):
                 download_with_curl(obj['ipfs_cid'],filename_ipfs,hashed_path)
+                os.utime(hashed_path,(ts,ts))
             if(os.path.isfile(hashed_path)):
                 os.rename(hashed_path,orig_path)
             
