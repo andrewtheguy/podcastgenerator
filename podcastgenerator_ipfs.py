@@ -300,11 +300,13 @@ cmd_upload = subparsers.add_parser(
     epilog="")
 
 cmd_upload.add_argument('-d','--directory', help='directory', required=False)
+cmd_upload.add_argument('-f','--force', help='force upload local files even if cid exists in info yaml', required=False)
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
 
 def uploadpodcast(args):
     argdir = args.directory or os.getcwd()
     delete_extra = args.delete_extra
+    force = args.force
 
     if(delete_extra):
         raise ArgumentError("delete_extra is not supported by web3.storage")
@@ -330,7 +332,7 @@ def uploadpodcast(args):
     tmpdir = dir+'/'+'tmp'
     os.makedirs(tmpdir,exist_ok=True)
     for obj in data["items"]:
-        if('ipfs_cid' not in obj):
+        if(force or ('ipfs_cid' not in obj)):
             local_path = os.path.join(dir, obj['file'])  
             filename_ipfs = get_filename_ipfs(obj)
             upload_path = tmpdir+'/'+filename_ipfs
