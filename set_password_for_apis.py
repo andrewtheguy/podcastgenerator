@@ -15,20 +15,22 @@ with open(config_file, "r") as stream:
     dataconf = yaml.safe_load(stream)
 config = dataconf['config']
 
-print('enter password for webdav, blank to skip:',file=sys.stderr)
+print('enter json for google storage account, blank to skip:',file=sys.stderr)
 password = sys.stdin.readline().rstrip()
 if(len(password)>0):
     print('changing password',file=sys.stderr)
-    keyring.set_password("podcastgenerator", config['webdav']['password_keyring'], password)
+    keyring.set_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'], password)
 
 print('enter api key for web3.storage, blank to skip:',file=sys.stderr)
 password = sys.stdin.readline().rstrip()
 if(len(password)>0):
     print('changing password',file=sys.stderr)
-    keyring.set_password("podcastgenerator", config['ipfs']['web3_api_keyring'], password)
+    keyring.set_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'], password)
 
-print('enter api token for cloudflare dns, blank to skip:',file=sys.stderr)
-password = sys.stdin.readline().rstrip()
-if(len(password)>0):
-    print('changing password',file=sys.stderr)
-    keyring.set_password("podcastgenerator", config['ipfs']['cloudflare_dns_api_token_keyring'], password)
+enable_publish_to_ipns = config['enable_publish_to_ipns'] == "yes"
+if enable_publish_to_ipns:
+    print('enter api token for cloudflare dns, blank to skip:',file=sys.stderr)
+    password = sys.stdin.readline().rstrip()
+    if(len(password)>0):
+        print('changing password',file=sys.stderr)
+        keyring.set_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'], password)
