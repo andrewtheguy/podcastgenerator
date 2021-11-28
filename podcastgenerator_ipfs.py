@@ -97,8 +97,8 @@ class PodcastGenerator:
 
         if not os.path.isfile(keylocalfilepath):
             if remote_key_exists:
-                rkey = blob.download_as_text()
-                raise ValueError(f'remote key exists while not local, create a file named channelkey.txt with the following key to local if the local directory is correct: {rkey}')
+                #rkey = blob.download_as_text()
+                raise ValueError(f'remote key exists while not local, download the config files from the bucket to the local folder if it is the right folder')
             with open(keylocalfilepath, "w") as stream:
                 key_from_dir = secrets.token_urlsafe(32)
                 stream.write(key_from_dir)
