@@ -467,7 +467,7 @@ def query_yes_no(question, default="yes"):
 
 cmd_restore = subparsers.add_parser(
     "restore",
-    description="restore original filename from md5 hashed filenames, files need to be downloaded manually first",
+    description="restore files from ipfs based on existing podcastinfo_ipfs.yml",
     epilog="")
 
 cmd_restore.add_argument('-d','--directory', help='directory', required=False)
@@ -517,7 +517,7 @@ def restore_from_ipfs(args):
                 os.utime(hashed_path,(ts,ts))
                 os.rename(hashed_path,orig_path)
 
-# sample script to fix ts of existing files from config                
+# sample script to fix ts for existing files from config                
 def fix_ts():
     argdir = os.getcwd()
     dir = os.path.abspath(argdir)
