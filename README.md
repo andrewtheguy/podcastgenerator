@@ -99,10 +99,7 @@ if --directory is not passed, it'll use current working directory
 ```
 ./main.py upload --directory=/directory_with_audio
 ```
-### upload and delete extra (not supported by web3.storage)
-```
-./main.py upload --directory=/directory_with_audio --delete-extra
-```
+
 
 will upload those w/o ipfs_cid and then save the new cid to podcastinfo_ipfs.yaml
 ```
@@ -112,7 +109,13 @@ will upload those w/o ipfs_cid and then save the new cid to podcastinfo_ipfs.yam
     ipfs_cid: cid for the file wrapped with directory in this format cid/md5sum.extension
 ```
 
-after that, the podcast feed will be available under the outputted url like `https://ipfs.io/ipns/domain?filename=feed.xml`
+after that, the podcast feed will be available under the outputted url like `https://gateway/ipns/domain?filename=feed.xml`
+
+
+upload and delete extra (not supported by web3.storage)
+```
+./main.py upload --directory=/directory_with_audio --delete-extra
+```
 
 
 # Sample wrapper script to enable it to run in working directory w/o specifying --directory
@@ -122,6 +125,7 @@ create ~/bin/podcastgenerator.sh with content similar to this and make it execut
 
 exec /Users/andrew/.local/share/virtualenvs/podcastgenerator-PTp5dkkQ/bin/python /Users/andrew/codes/podcastgenerator/podcastgenerator.py "$@"
 ```
+
 
 ## Note
 Regenerating `podcastconfig.yaml` won't remove deleted source file entries from the file; however, if the source file is deleted before it gets uploaded, it will cause upload to fail for that file.
