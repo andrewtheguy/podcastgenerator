@@ -21,9 +21,6 @@ import yaml
 from datetime import datetime, timezone
 from datetime import timedelta
 from urllib.parse import urlparse, urlunparse, quote
-from requests.auth import HTTPBasicAuth
-import requests
-from io import StringIO, BytesIO
 import secrets
 from datetime import datetime, timezone
 from web3client import Web3Client
@@ -82,6 +79,12 @@ class PodcastGenerator:
         storage_client = storage.Client(credentials=storage_credentials)
         bucket_name = config['google_cloud']['config_bucket_name']
         config_bucket = storage_client.get_bucket(bucket_name)
+
+        public_bucket = None
+        enable_publish_to_google_cloud = config['enable_publish_to_google_cloud'] == "yes"
+        if enable_publish_to_google_cloud:
+            public_bucket = storage_client.get_bucket(config['google_cloud']['public_bucket_name'])
+
         blob = config_bucket.blob(remote_key_path)
         remote_key_exists = blob.exists()
 
@@ -131,9 +134,13 @@ class PodcastGenerator:
         self.web3client = web3client
         self.google_storage_client = storage_client
         self.config_bucket = config_bucket
+        
+        self.enable_publish_to_ipns = enable_publish_to_ipns
         self.cloudflare_dns_api_token = cloudflare_dns_api_token
         self.cloudflare_zone_name = cloudflare_zone_name
-        self.enable_publish_to_ipns = enable_publish_to_ipns
+        
+        self.enable_publish_to_google_cloud = enable_publish_to_google_cloud
+        self.public_bucket = public_bucket 
 
 parser = ArgumentParser(
     description=f"Publish podcasts"
@@ -280,7 +287,7 @@ def publish_to_ipns(podcast_generator,path,name):
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
     # use one that doesn't redirect
-    print(f"https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    print(f"ipns published to https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
@@ -410,6 +417,14 @@ def uploadpodcast(args):
     config_bucket.blob(remote_dir+f'/{podcast_generator.info_filename}').upload_from_filename(info_file)
     config_bucket.blob(remote_dir+f'/feed.xml').upload_from_filename(feed_file)
     logging.info(f"finished uploading")
+
+    if podcast_generator.enable_publish_to_google_cloud:
+        logging.info(f"uploading feed to public bucket")
+        public_bucket = podcast_generator.public_bucket
+        blob = public_bucket.blob(remote_dir+f'/feed.xml')
+        blob.upload_from_filename(feed_file)
+        blob.make_public()
+        print("google cloud published to {}".format(blob.public_url))
 
     if enable_publish_to_ipns:    
         publish_to_ipns(podcast_generator,feed_file, remote_dir+'_feed.xml')    

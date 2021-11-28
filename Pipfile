@@ -10,7 +10,6 @@ tinytag = "*"
 natsort = "*"
 keyring = "*"
 jinja2 = "*"
-webdavclient3 = "*"
 cloudflare = "*"
 google-cloud-storage = "*"
 
@@ -18,6 +17,3 @@ google-cloud-storage = "*"
 
 [requires]
 python_version = "3.9"
-
-[pipenv]
-allow_prereleases = true

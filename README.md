@@ -24,11 +24,14 @@ Create a yaml file `podcastconfig_ipfs.yaml` in the directory with the following
 ```
 config:
   enable_publish_to_ipns: 'yes' # publish to ipns
+  enable_publish_to_google_cloud: 'yes' # needs a separate public bucket under google_cloud.public_bucket_name
   google_cloud: 
-    config_bucket_name: 'name' # for backing up config and feed
+    config_bucket_name: 'bucketname' # for backing up config and feed
+    public_bucket_name: 'bucketname' # for public feed
     json_token_keyring_name: 'keyringname'
   timestamp:
-    # for generate_method, it will sort the new files added and increment the file from seed_ts by a day from top to bottom based on list size starting from 0
+    # for generate_method, it will sort the new files added and increment 
+    # the file from seed_ts by a day from top to bottom based on list size starting from 0
     # for modified, it will use the file's modified timestamp
     generate_method: 'seed_ts'
     seed_ts: '2019-02-01T08:00:00+00:00'
@@ -38,11 +41,6 @@ config:
     description: "no description"
   remote:
     base_folder: "folder1" # use a random suffix to avoid people guessing its name
-  webdav: # for backing up config and feed, might be removed in the future
-    hostname: "https://webdavserver/"
-    root: "webdav"
-    login: "podcast"
-    password_keyring: "podcast"
   ipfs: # for generating url for media and feed
     media_host: "https://dweb.link" # gateway for podcast media links 
                                     #make sure it supports byte range otherwise apple podcast will complaint
