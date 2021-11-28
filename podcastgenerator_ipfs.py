@@ -300,7 +300,7 @@ cmd_upload = subparsers.add_parser(
     epilog="")
 
 cmd_upload.add_argument('-d','--directory', help='directory', required=False)
-cmd_upload.add_argument('-f','--force', help='force upload local files even if cid exists in info yaml', required=False)
+cmd_upload.add_argument('-f','--force', help='force upload local files even if cid exists in info yaml', required=False, default=False, action='store_true')
 cmd_upload.add_argument('--delete-extra', help='delete extra files not found', default=False, action='store_true')
 
 def uploadpodcast(args):
