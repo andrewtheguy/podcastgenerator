@@ -418,14 +418,15 @@ def uploadpodcast(args):
     with open(info_file, 'w') as outfile:
         yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
 
-    logging.info(f"backing up config files and feed")
-    config_bucket = podcast_generator.config_bucket
-    config_bucket.blob(remote_dir+f'/{podcast_generator.config_filename}').upload_from_filename(podcast_generator.config_file)
-    config_bucket.blob(remote_dir+f'/{podcast_generator.info_filename}').upload_from_filename(info_file)
-    config_bucket.blob(remote_dir+f'/feed.xml').upload_from_filename(feed_file)
-    logging.info(f"finished uploading")
 
     if podcast_generator.enable_publish_to_google_cloud:
+        logging.info(f"backing up config files and feed to google cloud storage")
+        config_bucket = podcast_generator.config_bucket
+        config_bucket.blob(remote_dir+f'/{podcast_generator.config_filename}').upload_from_filename(podcast_generator.config_file)
+        config_bucket.blob(remote_dir+f'/{podcast_generator.info_filename}').upload_from_filename(info_file)
+        config_bucket.blob(remote_dir+f'/feed.xml').upload_from_filename(feed_file)
+        logging.info(f"finished uploading config to gcp")
+
         logging.info(f"uploading feed to public bucket")
         public_bucket = podcast_generator.public_bucket
         blob = public_bucket.blob(remote_dir+f'/feed.xml')
