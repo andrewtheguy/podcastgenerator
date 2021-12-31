@@ -265,7 +265,7 @@ def process_directory(args):
 cmd_generate.set_defaults(command=process_directory)
 
 def publish_to_ipns(podcast_generator,path,name):
-    cid = podcast_generator.web3client.upload_to_web3storage(path,name)
+    cid = podcast_generator.web3client.upload_to_web3storage(path,name,True)
     if(len(cid)==0):
         raise ValueError('cid cannot be empty')
         
@@ -292,7 +292,7 @@ def publish_to_ipns(podcast_generator,path,name):
         r = cf.zones.dns_records.post(zone_id, data=new_record)
     
     # use one that doesn't redirect
-    print(f"ipns published to https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}?filename=feed.xml")
+    print(f"ipns published to https://gateway.ipfs.io/ipns/{subdomain_name}.{zone_name}/feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
@@ -434,7 +434,7 @@ def uploadpodcast(args):
         print("google cloud published to {}".format(blob.public_url))
 
     if enable_publish_to_ipns:    
-        publish_to_ipns(podcast_generator,feed_file, remote_dir+'_feed.xml')    
+        publish_to_ipns(podcast_generator,feed_file, remote_dir)    
 
 cmd_upload.set_defaults(command=uploadpodcast)
 
