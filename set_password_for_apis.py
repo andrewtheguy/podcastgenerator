@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 import keyring,sys,os,yaml
+from keyrings.cryptfile.cryptfile import CryptFileKeyring
+from pathlib import Path
+kr = CryptFileKeyring()
+# password to unlock keyring
+kr.keyring_key = Path(Path.home(),'.config','pythoncryptfilepass').read_text()
 
 if(sys.argv[1]):
     config_file = sys.argv[1]
@@ -19,13 +24,13 @@ print('enter json for google storage account, blank to skip:',file=sys.stderr)
 password = sys.stdin.readline().rstrip()
 if(len(password)>0):
     print('changing password',file=sys.stderr)
-    keyring.set_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'], password)
+    kr.set_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'], password)
 
 print('enter api key for web3.storage, blank to skip:',file=sys.stderr)
 password = sys.stdin.readline().rstrip()
 if(len(password)>0):
     print('changing password',file=sys.stderr)
-    keyring.set_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'], password)
+    kr.set_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'], password)
 
 enable_publish_to_ipns = config['enable_publish_to_ipns'] == "yes"
 if enable_publish_to_ipns:
@@ -33,4 +38,4 @@ if enable_publish_to_ipns:
     password = sys.stdin.readline().rstrip()
     if(len(password)>0):
         print('changing password',file=sys.stderr)
-        keyring.set_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'], password)
+        kr.set_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'], password)

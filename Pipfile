@@ -12,6 +12,8 @@ keyring = "*"
 jinja2 = "*"
 cloudflare = "*"
 google-cloud-storage = "*"
+python-dateutil = "*"
+"keyrings.cryptfile" = "*"
 
 [dev-packages]
 

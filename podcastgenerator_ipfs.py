@@ -30,6 +30,8 @@ from dateutil.parser import parse
 import json
 from google.cloud import storage
 from google.oauth2 import service_account
+from keyrings.cryptfile.cryptfile import CryptFileKeyring
+
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
@@ -56,8 +58,11 @@ class PodcastGenerator:
         remote_dir = config['remote']['base_folder']
 
         #webdav_password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
-        web3_api_key = keyring.get_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'])
-        cloud_storage_service_account = keyring.get_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'])
+        kr = CryptFileKeyring()
+        # password to unlock keyring
+        kr.keyring_key = Path(Path.home(),'.config','pythoncryptfilepass').read_text()
+        web3_api_key = kr.get_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'])
+        cloud_storage_service_account = kr.get_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'])
 
         enable_publish_to_ipns = config['enable_publish_to_ipns'] == "yes"
 
@@ -65,7 +70,7 @@ class PodcastGenerator:
         cloudflare_dns_api_token = ""
         if enable_publish_to_ipns:
             cloudflare_zone_name = config['ipns']['cloudflare_zone_name']
-            cloudflare_dns_api_token = keyring.get_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'])
+            cloudflare_dns_api_token = kr.get_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'])
 
         web3client = Web3Client(api_key=web3_api_key)
 
