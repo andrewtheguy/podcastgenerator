@@ -27,9 +27,6 @@ from web3client import Web3Client
 import urllib
 import CloudFlare
 from dateutil.parser import parse
-import json
-from google.cloud import storage
-from google.oauth2 import service_account
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 
 
@@ -43,8 +40,7 @@ mime_extension_mapping = {
 
 
 class PodcastGenerator:
-    def __init__(self, directory,init=False):
-        keylocalfilepath = directory+ '/' + 'channelkey.txt'
+    def __init__(self, directory):
 
         config_filename = 'podcastconfig_ipfs.yaml'
         config_file = f'{directory}/{config_filename}'
@@ -56,13 +52,10 @@ class PodcastGenerator:
         config = dataconf['config']
 
         remote_dir = config['remote']['base_folder']
-
-        #webdav_password = keyring.get_password("podcastgenerator", config['webdav']['password_keyring'])
         kr = CryptFileKeyring()
         # password to unlock keyring
         kr.keyring_key = Path(Path.home(),'.config','pythoncryptfilepass').read_text()
         web3_api_key = kr.get_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'])
-        cloud_storage_service_account = kr.get_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'])
 
         enable_publish_to_ipns = config['enable_publish_to_ipns'] == "yes"
 
@@ -73,56 +66,6 @@ class PodcastGenerator:
             cloudflare_dns_api_token = kr.get_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'])
 
         web3client = Web3Client(api_key=web3_api_key)
-
-        remote_key_path = remote_dir + '/' + 'channelkey.txt'
-        
-
-
-        storage_credentials = service_account.Credentials.from_service_account_info(json.loads(cloud_storage_service_account))
-
-        # Instantiates a client
-        storage_client = storage.Client(credentials=storage_credentials)
-        bucket_name = config['google_cloud']['config_bucket_name']
-        config_bucket = storage_client.get_bucket(bucket_name)
-
-        public_bucket = None
-        enable_publish_to_google_cloud = config['enable_publish_to_google_cloud'] == "yes"
-        if enable_publish_to_google_cloud:
-            public_bucket = storage_client.get_bucket(config['google_cloud']['public_bucket_name'])
-
-        blob = config_bucket.blob(remote_key_path)
-        remote_key_exists = blob.exists()
-
-        if init:
-            if(remote_key_exists):
-                raise RuntimeError('cannot init when remote key exists')
-        elif not remote_key_exists:
-            raise RuntimeError(
-                f'remote key doesnt exists under {remote_dir}, init first if it is a new project')
-
-        if not os.path.isfile(keylocalfilepath):
-            if remote_key_exists:
-                #rkey = blob.download_as_text()
-                raise ValueError(f'remote key exists while not local, download the config files from the bucket to the local folder if it is the right folder')
-            with open(keylocalfilepath, "w") as stream:
-                key_from_dir = secrets.token_urlsafe(32)
-                stream.write(key_from_dir)
-        else:
-            with open(keylocalfilepath, "r") as stream:
-                key_from_dir = stream.read()
-
-        if (len(key_from_dir) < 5):
-            raise ValueError('invalid local key length')
-
-
-        if not remote_key_exists:
-            blob.upload_from_filename(keylocalfilepath)
-            key = key_from_dir
-        else: #remote exists
-            key = blob.download_as_text()
-        #print(key)
-        if(key_from_dir != key):
-            raise ValueError('channelkey.txt need to match server')
 
         
         self.info_filename = 'podcastinfo_ipfs.yaml'
@@ -135,43 +78,19 @@ class PodcastGenerator:
         self.config = config
         self.ipfs_media_host = urlunparse(urlparse(
             config['ipfs']['media_host']))
-        self.key = key
+
         self.web3client = web3client
-        self.google_storage_client = storage_client
-        self.config_bucket = config_bucket
-        
+
         self.enable_publish_to_ipns = enable_publish_to_ipns
         self.cloudflare_dns_api_token = cloudflare_dns_api_token
         self.cloudflare_zone_name = cloudflare_zone_name
         
-        self.enable_publish_to_google_cloud = enable_publish_to_google_cloud
-        self.public_bucket = public_bucket 
-
 parser = ArgumentParser(
     description=f"Publish podcasts"
 )
 
 subparsers = parser.add_subparsers(help="Command")
 parser.set_defaults(command=lambda _: parser.print_help())
-
-cmd_init = subparsers.add_parser(
-    "init",
-    description="init project and remote dir, podcastconfig.yaml must exist in local folder, remote key must not exists",
-    epilog="")
-
-cmd_init.add_argument('-d', '--directory', help='directory', required=False)
-
-def init_project(args):
-    directory = args.directory or os.getcwd()
-    dir = os.path.abspath(directory)
-
-    if not os.path.isdir(dir):
-        raise RuntimeError(f'{dir} is not a folder')
-
-    podcast_generator = PodcastGenerator(directory=dir,init=True)
-
-
-cmd_init.set_defaults(command=init_project)
 
 
 cmd_generate = subparsers.add_parser(
@@ -417,22 +336,6 @@ def uploadpodcast(args):
     logging.info(f"saving config file")
     with open(info_file, 'w') as outfile:
         yaml.safe_dump(data, outfile, encoding='utf-8', allow_unicode=True,indent=4, sort_keys=False)
-
-
-    if podcast_generator.enable_publish_to_google_cloud:
-        logging.info(f"backing up config files and feed to google cloud storage")
-        config_bucket = podcast_generator.config_bucket
-        config_bucket.blob(remote_dir+f'/{podcast_generator.config_filename}').upload_from_filename(podcast_generator.config_file)
-        config_bucket.blob(remote_dir+f'/{podcast_generator.info_filename}').upload_from_filename(info_file)
-        config_bucket.blob(remote_dir+f'/feed.xml').upload_from_filename(feed_file)
-        logging.info(f"finished uploading config to gcp")
-
-        logging.info(f"uploading feed to public bucket")
-        public_bucket = podcast_generator.public_bucket
-        blob = public_bucket.blob(remote_dir+f'/feed.xml')
-        blob.upload_from_filename(feed_file)
-        blob.make_public()
-        print("google cloud published to {}".format(blob.public_url))
 
     if enable_publish_to_ipns:    
         publish_to_ipns(podcast_generator,feed_file, remote_dir)    

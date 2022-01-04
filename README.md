@@ -24,11 +24,6 @@ Create a yaml file `podcastconfig_ipfs.yaml` in the directory with the following
 ```
 config:
   enable_publish_to_ipns: 'yes' # publish to ipns
-  enable_publish_to_google_cloud: 'yes' # needs a separate public bucket under google_cloud.public_bucket_name
-  google_cloud: 
-    config_bucket_name: 'bucketname' # for backing up config and feed
-    public_bucket_name: 'bucketname' # for public feed
-    json_token_keyring_name: 'keyringname'
   timestamp:
     # for generate_method, it will sort the new files added and increment 
     # the file from seed_ts by a day from top to bottom based on list size starting from 0

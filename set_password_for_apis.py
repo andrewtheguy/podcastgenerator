@@ -20,12 +20,6 @@ with open(config_file, "r") as stream:
     dataconf = yaml.safe_load(stream)
 config = dataconf['config']
 
-print('enter json for google storage account, blank to skip:',file=sys.stderr)
-password = sys.stdin.readline().rstrip()
-if(len(password)>0):
-    print('changing password',file=sys.stderr)
-    kr.set_password("podcastgenerator", config['google_cloud']['json_token_keyring_name'], password)
-
 print('enter api key for web3.storage, blank to skip:',file=sys.stderr)
 password = sys.stdin.readline().rstrip()
 if(len(password)>0):
