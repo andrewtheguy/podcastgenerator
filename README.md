@@ -37,7 +37,7 @@ config:
   remote:
     base_folder: "folder1" # use a random suffix to avoid people guessing its name
   ipfs: # for generating url for media and feed
-    media_host: "https://dweb.link" # gateway for podcast media links 
+    media_host: "https://infura-ipfs.io" # gateway for podcast media links 
                                     #make sure it supports byte range otherwise apple podcast will complaint
     web3_api_keyring_name: "keyringname"
   ipns: # for generating url for media and feed
