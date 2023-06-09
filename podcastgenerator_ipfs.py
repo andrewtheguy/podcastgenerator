@@ -35,7 +35,8 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 mime_extension_mapping = {
-    ".m4a":"audio/mp4"
+    ".m4a":"audio/mp4",
+    ".m4b":"audio/mp4",
 }
 
 
@@ -138,7 +139,7 @@ def process_directory(args):
         hash_md5s.add(obj['hash_md5'])
 
     #logging.info(hash_md5s)
-    files = glob.glob(f"{dir}/*.m4a")
+    files = glob.glob(f"{dir}/*.m4[ab]")
 
     if timestamp_strategy == 'seed_ts':
         files_sorted = natsorted(files)
