@@ -95,6 +95,7 @@ if --directory is not passed, it'll use current working directory
         track: null
         track_total: null
         year: '2019'
+    ipfs_cid: cid
 ```
 
 ## upload
