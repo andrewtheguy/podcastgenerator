@@ -13,6 +13,7 @@ jinja2 = "*"
 cloudflare = "*"
 python-dateutil = "*"
 "keyrings.cryptfile" = "*"
+boto3 = "*"
 
 [dev-packages]
 

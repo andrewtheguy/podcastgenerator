@@ -33,3 +33,11 @@ if enable_publish_to_ipns:
     if(len(password)>0):
         print('changing password',file=sys.stderr)
         kr.set_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'], password)
+
+enable_publish_to_s3 = config['enable_publish_to_s3'] == "yes"
+if enable_publish_to_s3:
+    print('enter api token for s3, blank to skip:',file=sys.stderr)
+    password = sys.stdin.readline().rstrip()
+    if(len(password)>0):
+        print('changing password',file=sys.stderr)
+        kr.set_password("podcastgenerator", config['s3']['aws_secret_access_key_keyring_name'], password)

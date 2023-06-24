@@ -28,6 +28,8 @@ import urllib
 import CloudFlare
 from dateutil.parser import parse
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
+import boto3
+from botocore.client import Config
 
 
 logging.basicConfig()
@@ -59,12 +61,20 @@ class PodcastGenerator:
         web3_api_key = kr.get_password("podcastgenerator", config['ipfs']['web3_api_keyring_name'])
 
         enable_publish_to_ipns = config['enable_publish_to_ipns'] == "yes"
+        enable_publish_to_s3 = config['enable_publish_to_s3'] == "yes"
 
         cloudflare_zone_name = ""
         cloudflare_dns_api_token = ""
         if enable_publish_to_ipns:
             cloudflare_zone_name = config['ipns']['cloudflare_zone_name']
             cloudflare_dns_api_token = kr.get_password("podcastgenerator", config['ipns']['cloudflare_dns_api_token_keyring_name'])
+
+        if enable_publish_to_s3:
+            s3_endpoint_url = config['s3']['endpoint_url']
+            s3_region_name = config['s3']['region_name']
+            s3_aws_access_key_id = config['s3']['aws_access_key_id']
+            aws_secret_access_key = kr.get_password("podcastgenerator", config['s3']['aws_secret_access_key_keyring_name'])
+            s3_bucket = config['s3']['bucket']
 
         web3client = Web3Client(api_key=web3_api_key)
 
@@ -86,6 +96,14 @@ class PodcastGenerator:
         self.cloudflare_dns_api_token = cloudflare_dns_api_token
         self.cloudflare_zone_name = cloudflare_zone_name
         
+
+        self.enable_publish_to_s3 = enable_publish_to_s3
+        self.s3_endpoint_url = s3_endpoint_url
+        self.s3_region_name = s3_region_name
+        self.s3_aws_access_key_id = s3_aws_access_key_id
+        self.s3_aws_secret_access_key = aws_secret_access_key
+        self.s3_bucket = s3_bucket
+
 parser = ArgumentParser(
     description=f"Publish podcasts"
 )
@@ -214,6 +232,33 @@ def publish_to_ipns(podcast_generator,path,name):
     # use one that doesn't redirect
     print(f"ipns published to /ipns/{subdomain_name}.{zone_name}/feed.xml")
 
+def publish_to_s3(podcast_generator,path,name):
+    config = Config(
+    connect_timeout=4,
+    read_timeout=4,
+    region_name=podcast_generator.s3_region_name,
+    )
+
+    s3 = boto3.resource(
+        's3',
+        aws_access_key_id=podcast_generator.s3_aws_access_key_id,
+        aws_secret_access_key=podcast_generator.s3_aws_secret_access_key,
+        config=config,
+        endpoint_url=podcast_generator.s3_endpoint_url, #My home region
+    )
+    # Print out bucket names
+    for bucket in s3.buckets.all():
+        print(bucket.name)
+
+    folder_name = podcast_generator.remote_dir
+    bucket = s3.Bucket(podcast_generator.s3_bucket)
+    response = bucket.upload_file(path,f'{folder_name}/feed.xml', ExtraArgs={
+        'ContentType': 'text/xml; charset=utf-8',
+        })
+
+    
+    print(f"ipns published to {folder_name}/feed.xml")
+
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
     filename_ipfs = obj['hash_md5'] + ext
@@ -251,6 +296,7 @@ def uploadpodcast(args):
     remote_dir = podcast_generator.remote_dir
 
     enable_publish_to_ipns = podcast_generator.enable_publish_to_ipns
+    enable_publish_to_s3 = podcast_generator.enable_publish_to_s3
 
     now = datetime.now(timezone.utc)
 
@@ -340,6 +386,9 @@ def uploadpodcast(args):
 
     if enable_publish_to_ipns:    
         publish_to_ipns(podcast_generator,feed_file, remote_dir)    
+
+    if enable_publish_to_s3:    
+        publish_to_s3(podcast_generator,feed_file, remote_dir)        
 
 cmd_upload.set_defaults(command=uploadpodcast)
 
