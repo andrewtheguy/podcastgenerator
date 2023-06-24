@@ -46,7 +46,7 @@ config:
     cloudflare_dns_api_token_keyring_name: "keyringname2"
     cloudflare_zone_name: "cloudflare zone (domain name)"
   s3:
-    endpoint_url: "https://ax70sr0reyuj.compat.objectstorage.us-sanjose-1.oraclecloud.com"
+    endpoint_url: "https://url"
     region_name: us-sanjose-1
     aws_access_key_id: "key"
     aws_secret_access_key_keyring_name: "secret_keyring_not_actual_key"
