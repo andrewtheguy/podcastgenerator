@@ -24,6 +24,8 @@ Create a yaml file `podcastconfig_ipfs.yaml` in the directory with the following
 ```
 config:
   enable_publish_to_ipns: 'yes' # publish to ipns
+  enable_publish_to_google_cloud: 'no' # no longer works
+  enable_publish_to_s3: 'no' # publish to s3
   timestamp:
     # for generate_method, it will sort the new files added and increment 
     # the file from seed_ts by a day from top to bottom based on list size starting from 0
@@ -40,9 +42,15 @@ config:
     media_host: "https://infura-ipfs.io" # gateway for podcast media links 
                                     #make sure it supports byte range otherwise apple podcast will complaint
     web3_api_keyring_name: "keyringname"
-  ipns: # for generating url for media and feed
+  ipns: # for generating url for feed
     cloudflare_dns_api_token_keyring_name: "keyringname2"
     cloudflare_zone_name: "cloudflare zone (domain name)"
+  s3:
+    endpoint_url: "https://ax70sr0reyuj.compat.objectstorage.us-sanjose-1.oraclecloud.com"
+    region_name: us-sanjose-1
+    aws_access_key_id: "key"
+    aws_secret_access_key_keyring_name: "secret_keyring_not_actual_key"
+    bucket: "mybucket"
 ```
 
 
