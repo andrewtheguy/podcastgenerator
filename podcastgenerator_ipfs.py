@@ -257,7 +257,7 @@ def publish_to_s3(podcast_generator,path,name):
         })
 
     
-    print(f"ipns published to {folder_name}/feed.xml")
+    print(f"feed published to {folder_name}/feed.xml")
 
 def get_filename_ipfs(obj):
     ext = obj['file_extension']        
